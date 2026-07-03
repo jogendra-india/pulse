@@ -67,7 +67,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
                   <div style="font-weight:700;font-size:16px;">{{ u.name }}</div>
                   <div style="color:#9DA391;font-size:13px;">🔥 {{ u.streak }} day streak · {{ u.score }} pts</div>
                 </div>
-                <div style="color:#C7F536;font-family:Barlow Condensed;font-weight:700;font-size:15px;letter-spacing:.06em;text-transform:uppercase;">Enter →</div>
+                <div style="color:#C7F536;font-family:Barlow Condensed;font-weight:700;font-size:15px;letter-spacing:.06em;text-transform:uppercase;">{{ u.actionLabel }}</div>
               </button>
             </sc-for>
           </div>
@@ -348,6 +348,20 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
 
             <sc-if value="{{ pIsMe }}" hint-placeholder-val="{{ false }}">
               <div style="background:#15170F;border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:16px 18px;display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
+                <div style="display:flex;align-items:center;gap:14px;">
+                  <div style="width:48px;height:48px;border-radius:14px;overflow:hidden;flex-shrink:0;background:#0C0D0A;display:flex;align-items:center;justify-content:center;font-size:20px;">{{ profileAvatarPreviewNode }}</div>
+                  <div>
+                    <div style="font-family:Barlow Condensed;font-weight:700;font-size:16px;text-transform:uppercase;letter-spacing:.06em;">Profile photo</div>
+                    <label style="cursor:pointer;color:#C7F536;font-size:13px;font-weight:700;">Choose photo<input type="file" accept="image/*" onChange="{{ onAvatarPick }}" style="display:none;" /></label>
+                  </div>
+                </div>
+                <sc-if value="{{ avatarDirty }}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{ saveAvatar }}" style="padding:10px 18px;border-radius:10px;border:1px solid #C7F536;background:transparent;color:#C7F536;font-weight:700;cursor:pointer;">Save photo</button>
+                </sc-if>
+              </div>
+            </sc-if>
+            <sc-if value="{{ pIsMe }}" hint-placeholder-val="{{ false }}">
+              <div style="background:#15170F;border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:16px 18px;display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
                 <div><div style="font-family:Barlow Condensed;font-weight:700;font-size:16px;text-transform:uppercase;letter-spacing:.06em;">Weekly goal</div><div style="color:#9DA391;font-size:13px;">Currently {{ pGoal }} min / week</div></div>
                 <div style="display:flex;gap:8px;"><input type="number" value="{{ goalInput }}" onInput="{{ onGoal }}" style="width:110px;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:#0C0D0A;color:#F3F5EC;font-size:15px;outline:none;" /><button onClick="{{ saveGoal }}" style="padding:0 18px;border-radius:10px;border:1px solid #C7F536;background:transparent;color:#C7F536;font-weight:700;cursor:pointer;">Update</button></div>
               </div>
@@ -440,7 +454,7 @@ class Component extends DCLogic {
     view: 'onboarding', tab: 'home', profileId: null, monthKey: null,
     form: { date: '', minutes: '', type: 'Running', customType: '', adding: false },
     nameInput: '', goalInput: 150,
-    avatarFile: null, avatarPreview: null,
+    avatarFile: null, avatarPreview: null,  // pending pick, not yet saved
     entryPhotoFile: null, entryPhotoPreview: null,
     editingEntryId: null,
     confirmDeleteId: null,
@@ -591,6 +605,20 @@ class Component extends DCLogic {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
     this.setState({ avatarFile: file, avatarPreview: URL.createObjectURL(file) });
+  };
+  saveAvatar = () => {
+    if (!this.state.avatarFile || !this.state.meId) return;
+    const fd = new FormData();
+    fd.append('avatar', this.state.avatarFile);
+    this.api('/users/' + this.state.meId + '/', { method: 'PATCH', body: fd })
+      .then(u => {
+        this.setState({
+          users: this.state.users.map(x => x.id === this.state.meId ? { ...x, avatar: u.avatar } : x),
+          avatarFile: null, avatarPreview: null,
+        });
+        this.toast('Profile photo updated');
+      })
+      .catch(() => this.toast('Could not update photo'));
   };
   onEntryPhotoPick = (e) => {
     const file = e.target.files && e.target.files[0];
@@ -841,11 +869,16 @@ class Component extends DCLogic {
     const groupedDays = order.map(d => gmap[d]);
 
     const navBase = 'padding:9px 18px;border-radius:999px;border:none;cursor:pointer;font-family:Barlow Condensed;font-weight:700;font-size:16px;letter-spacing:.06em;text-transform:uppercase;transition:.15s;';
-    const navTabs = [['home', 'Home'], ['log', 'Log'], ['board', 'Board']].map(t => ({ label: t[1], onClick: () => this.setTab(t[0]),
-      style: navBase + (S.tab === t[0] ? 'background:#C7F536;color:#0C0D0A;' : 'background:transparent;color:#9DA391;') }));
+    const viewingOtherProfile = S.tab === 'profile' && !!S.profileId && S.profileId !== S.meId;
+    const navTabs = [['home', 'Home'], ['log', 'Log'], ['board', 'Board']]
+      .filter(t => t[0] !== 'log' || !viewingOtherProfile)
+      .map(t => ({ label: t[1], onClick: () => this.setTab(t[0]),
+        style: navBase + (S.tab === t[0] ? 'background:#C7F536;color:#0C0D0A;' : 'background:transparent;color:#9DA391;') }));
 
     const existingUsers = S.users.map(u => { const b = this.scoreBreakdown(u.id, nowMK);
-      return { ...uv(u), streak: this.currentStreak(u.id), score: b.total, onPick: () => this.update({ meId: u.id, view: 'app', tab: 'home', profileId: u.id }) }; })
+      return { ...uv(u), streak: this.currentStreak(u.id), score: b.total,
+        actionLabel: u.id === S.meId ? 'Continue →' : 'Switch →',
+        onPick: () => this.update({ meId: u.id, view: 'app', tab: 'home', profileId: u.id }) }; })
       .sort((a, b) => b.score - a.score);
 
     return {
@@ -859,7 +892,12 @@ class Component extends DCLogic {
       openMe: this.openMe, goLog: this.goLog, switchUser: this.switchUser, goBoard: this.goBoard,
       createUser: this.createUser, onName: this.onName, onGoal: this.onGoal,
       onAvatarPick: this.onAvatarPick,
+      saveAvatar: this.saveAvatar,
+      avatarDirty: !!S.avatarFile,
       avatarPreviewNode: S.avatarPreview ? React.createElement('img', { src: S.avatarPreview, style: { width: '100%', height: '100%', objectFit: 'cover' } }) : '📷',
+      profileAvatarPreviewNode: (S.avatarPreview || pView.avatar)
+        ? React.createElement('img', { src: S.avatarPreview || pView.avatar, style: { width: '100%', height: '100%', objectFit: 'cover' } })
+        : '📷',
       onDate: this.onDate, onMinutes: this.onMinutes, onCustom: this.onCustom,
       onEntryPhotoPick: this.onEntryPhotoPick,
       entryPhotoNode: S.entryPhotoPreview ? React.createElement('img', { src: S.entryPhotoPreview, style: { width: '100%', height: '100%', objectFit: 'cover' } }) : '📷',
