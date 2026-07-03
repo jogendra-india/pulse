@@ -1,5 +1,4 @@
 # Pulse
-
 A fitness leaderboard app — log workouts, build a streak, and compete on a monthly leaderboard with friends.
 
 **Live:** https://jogendra-india.github.io/pulse/
