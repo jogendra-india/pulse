@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{background:#0C0D0A;}
+::selection{background:#C7F536;color:#0C0D0A;}
+input,button,select{font-family:inherit;}
+input::placeholder{color:#6b7061;}
+@keyframes flbpop{0%{transform:translateY(8px);opacity:0}100%{transform:translateY(0);opacity:1}}
+@keyframes flbtoast{0%{transform:translate(-50%,20px);opacity:0}10%{transform:translate(-50%,0);opacity:1}88%{transform:translate(-50%,0);opacity:1}100%{transform:translate(-50%,20px);opacity:0}}
+input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55;cursor:pointer;}
+::-webkit-scrollbar{width:10px;height:10px;}
+::-webkit-scrollbar-thumb{background:#2a2e20;border-radius:10px;}
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:radial-gradient(1200px 620px at 72% -12%, #17190f 0%, #0C0D0A 55%);color:#F3F5EC;font-family:Archivo,system-ui,-apple-system,sans-serif;">
+
+  <sc-if value="{{ notReady }}" hint-placeholder-val="{{ true }}">
+    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;">
+      <div style="font-family:Barlow Condensed;font-weight:800;font-size:60px;letter-spacing:.04em;">PULSE<span style="color:#C7F536;">.</span></div>
+    </div>
+  </sc-if>
+
+  <!-- ONBOARDING -->
+  <sc-if value="{{ showOnboarding }}" hint-placeholder-val="{{ false }}">
+    <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;gap:30px;">
+      <div style="text-align:center;">
+        <div style="font-family:Barlow Condensed;font-weight:800;font-size:70px;letter-spacing:.03em;line-height:.9;">PULSE<span style="color:#C7F536;">.</span></div>
+        <div style="color:#9DA391;font-size:14px;letter-spacing:.2em;text-transform:uppercase;margin-top:10px;">Log it · Rank up · Repeat</div>
+      </div>
+
+      <div style="width:100%;max-width:430px;display:flex;flex-direction:column;gap:18px;">
+        <sc-if value="{{ hasUsers }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <div style="font-family:Barlow Condensed;font-weight:700;font-size:19px;text-transform:uppercase;letter-spacing:.08em;color:#9DA391;">Jump back in</div>
+            <sc-for list="{{ existingUsers }}" as="u" hint-placeholder-count="3">
+              <button onClick="{{ u.onPick }}" style="display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.08);background:#15170F;cursor:pointer;text-align:left;color:#F3F5EC;transition:.15s;" style-hover="border-color:#C7F536;background:#1b1e13;">
+                <div style="width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:20px;color:#0C0D0A;background:{{ u.color }};">{{ u.initials }}</div>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-weight:700;font-size:16px;">{{ u.name }}</div>
+                  <div style="color:#9DA391;font-size:13px;">🔥 {{ u.streak }} day streak · {{ u.score }} pts</div>
+                </div>
+                <div style="color:#C7F536;font-family:Barlow Condensed;font-weight:700;font-size:15px;letter-spacing:.06em;text-transform:uppercase;">Enter →</div>
+              </button>
+            </sc-for>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;color:#5c6152;font-size:12px;text-transform:uppercase;letter-spacing:.14em;">
+            <div style="flex:1;height:1px;background:rgba(255,255,255,.08);"></div>new athlete<div style="flex:1;height:1px;background:rgba(255,255,255,.08);"></div>
+          </div>
+        </sc-if>
+
+        <div style="background:#15170F;border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:22px;display:flex;flex-direction:column;gap:14px;">
+          <div style="font-family:Barlow Condensed;font-weight:700;font-size:22px;text-transform:uppercase;letter-spacing:.06em;">Create your profile</div>
+          <div>
+            <label style="display:block;color:#9DA391;font-size:11px;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px;">Your name</label>
+            <input value="{{ nameInput }}" onInput="{{ onName }}" placeholder="e.g. Alex Rivera" style="width:100%;padding:13px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:#0C0D0A;color:#F3F5EC;font-size:16px;outline:none;" />
+          </div>
+          <div>
+            <label style="display:block;color:#9DA391;font-size:11px;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px;">Weekly goal (minutes)</label>
+            <input type="number" value="{{ goalInput }}" onInput="{{ onGoal }}" style="width:100%;padding:13px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:#0C0D0A;color:#F3F5EC;font-size:16px;outline:none;" />
+          </div>
+          <button onClick="{{ createUser }}" style="margin-top:4px;padding:14px;border-radius:12px;border:none;background:#C7F536;color:#0C0D0A;font-family:Barlow Condensed;font-weight:800;font-size:20px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;" style-hover="background:#d4ff4d;">Start training →</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- APP -->
+  <sc-if value="{{ showApp }}" hint-placeholder-val="{{ false }}">
+    <div>
+      <div style="position:sticky;top:0;z-index:20;backdrop-filter:blur(10px);background:rgba(12,13,10,.82);border-bottom:1px solid rgba(255,255,255,.07);">
+        <div style="max-width:1040px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+          <div style="font-family:Barlow Condensed;font-weight:800;font-size:26px;letter-spacing:.03em;">PULSE<span style="color:#C7F536;">.</span></div>
+          <div style="display:flex;gap:6px;background:#15170F;padding:5px;border-radius:999px;border:1px solid rgba(255,255,255,.06);">
+            <sc-for list="{{ navTabs }}" as="t" hint-placeholder-count="3">
+              <button onClick="{{ t.onClick }}" style="{{ t.style }}">{{ t.label }}</button>
+            </sc-for>
+          </div>
+          <div style="flex:1;"></div>
+          <button onClick="{{ openMe }}" style="display:flex;align-items:center;gap:10px;padding:6px 12px 6px 6px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:#15170F;cursor:pointer;color:#F3F5EC;" style-hover="border-color:#C7F536;">
+            <div style="width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:16px;color:#0C0D0A;background:{{ me.color }};">{{ me.initials }}</div>
+            <div style="text-align:left;line-height:1.1;">
+              <div style="font-weight:700;font-size:14px;">{{ me.name }}</div>
+              <div style="color:#C7F536;font-size:12px;font-family:Barlow Condensed;font-weight:700;letter-spacing:.04em;">{{ meScore }} PTS</div>
+            </div>
+          </button>
+          <button onClick="{{ switchUser }}" title="Switch athlete" style="padding:9px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.08);background:transparent;color:#9DA391;cursor:pointer;font-size:13px;" style-hover="color:#F3F5EC;border-color:#C7F536;">Switch</button>
+        </div>
+      </div>
+
+      <div style="max-width:1040px;margin:0 auto;padding:24px 20px 90px;">
+
+        <!-- HOME -->
+        <sc-if value="{{ isHome }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:18px;animation:flbpop .3s ease;">
+            <div style="background:linear-gradient(120deg,#1c2013,#15170F);border:1px solid rgba(255,255,255,.08);border-radius:24px;padding:28px;display:flex;flex-wrap:wrap;gap:20px;align-items:center;justify-content:space-between;">
+              <div style="min-width:240px;">
+                <div style="font-family:Barlow Condensed;font-weight:800;font-size:40px;line-height:1;text-transform:uppercase;">{{ greeting }}</div>
+                <div style="color:#9DA391;font-size:15px;margin-top:8px;max-width:440px;">{{ heroStatus }}</div>
+              </div>
+              <button onClick="{{ goLog }}" style="padding:16px 26px;border-radius:14px;border:none;background:#C7F536;color:#0C0D0A;font-family:Barlow Condensed;font-weight:800;font-size:22px;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;white-space:nowrap;" style-hover="background:#d4ff4d;">＋ Log a workout</button>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:14px;">
+              <sc-for list="{{ statCards }}" as="c" hint-placeholder-count="4">
+                <div style="background:#15170F;border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:18px;">
+                  <div style="display:flex;align-items:center;justify-content:space-between;">
+                    <div style="color:#9DA391;font-size:11px;text-transform:uppercase;letter-spacing:.1em;">{{ c.label }}</div>
+                    <div style="font-size:17px;">{{ c.icon }}</div>
+                  </div>
+                  <div style="font-family:Barlow Condensed;font-weight:800;font-size:42px;line-height:1.05;margin-top:8px;color:{{ c.accent }};">{{ c.value }}</div>
+                  <div style="color:#6b7061;font-size:12px;">{{ c.sub }}</div>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px;">
+              <div style="background:#15170F;border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:20px;">
+                <div style="display:flex;justify-content:space-between;align-items:baseline;">
+                  <div style="font-family:Barlow Condensed;font-weight:700;font-size:20px;text-transform:uppercase;letter-spacing:.06em;">Score breakdown</div>
+                  <div style="font-family:Barlow Condensed;font-weight:800;font-size:26px;color:#C7F536;">{{ meScore }} <span style="font-size:13px;color:#9DA391;">pts</span></div>
+                </div>
+                <div style="color:#6b7061;font-size:12px;margin-bottom:16px;">{{ monthLabel }}</div>
+                <div style="display:flex;flex-direction:column;gap:13px;">
+                  <sc-for list="{{ meBars }}" as="b" hint-placeholder-count="4">
+                    <div>
+                      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;"><span style="color:#c9cdbf;">{{ b.label }}</span><span style="font-family:Barlow Condensed;font-weight:700;color:{{ b.color }};">+{{ b.value }}</span></div>
+                      <div style="height:8px;border-radius:999px;background:#0C0D0A;overflow:hidden;"><div style="height:100%;border-radius:999px;width:{{ b.pct }};background:{{ b.color }};"></div></div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+
+              <div style="background:#15170F;border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:20px;">
+                <div style="font-family:Barlow Condensed;font-weight:700;font-size:20px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">Recent activity</div>
+                <sc-if value="{{ hasRecent }}" hint-placeholder-val="{{ true }}">
+                  <div style="display:flex;flex-direction:column;">
+                    <sc-for list="{{ recent }}" as="e" hint-placeholder-count="5">
+                      <div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05);">
+                        <div style="width:8px;height:8px;border-radius:50%;background:#C7F536;flex-shrink:0;"></div>
+                        <div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:14px;">{{ e.type }}</div><div style="color:#6b7061;font-size:12px;">{{ e.dateLabel }}</div></div>
+                        <div style="font-family:Barlow Condensed;font-weight:700;font-size:18px;">{{ e.minutes }}<span style="font-size:12px;color:#9DA391;"> min</span></div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ noRecent }}" hint-placeholder-val="{{ false }}">
+                  <div style="color:#6b7061;font-size:14px;padding:24px 0;text-align:center;">No workouts yet — log your first one!</div>
+                </sc-if>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- LOG -->
+        <sc-if value="{{ isLog }}" hint-placeholder-val="{{ false }}">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;animation:flbpop .3s ease;">
+            <div style="background:#15170F;border:1px solid rgba(255,255,255,.07);border-radius:20px;padding:22px;display:flex;flex-direction:column;gap:18px;">
+              <div style="font-family:Barlow Condensed;font-weight:800;font-size:26px;text-transform:uppercase;letter-spacing:.04em;">Log a workout</div>
+
+              <div>
+                <label style="display:block;color:#9DA391;font-size:11px;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px;">Date</label>
+                <input type="date" value="{{ form.date }}" onInput="{{ onDate }}" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:#0C0D0A;color:#F3F5EC;font-size:15px;outline:none;" />
+              </div>
+
+              <div>
+                <label style="display:block;color:#9DA391;font-size:11px;text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px;">Type of exercise</label>
+                <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                  <sc-for list="{{ typeChips }}" as="t" hint-placeholder-count="6">
+                    <button onClick="{{ t.onClick }}" style="{{ t.style }}">{{ t.label }}</button>
+                  </sc-for>
+                  <button onClick="{{ toggleCustom }}" style="padding:9px 14px;border-radius:999px;border:1px dashed rgba(199,245,54,.5);background:transparent;color:#C7F536;cursor:pointer;font-size:14px;font-weight:600;">＋ Custom</button>
+                </div>
+                <sc-if value="{{ form.adding }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;gap:8px;margin-top:10px;">
+                    <input value="{{ form.customType }}" onInput="{{ onCustom }}" placeholder="New exercise type" style="flex:1;padding:11px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:#0C0D0A;color:#F3F5EC;font-size:15px;outline:none;" />
+                    <button onClick="{{ addType }}" style="padding:0 18px;border-radius:12px;border:1px solid #C7F536;background:transparent;color:#C7F536;font-weight:700;cursor:pointer;">Add</button>
+                  </div>
+                </sc-if>
+              </div>
+
+              <div>
+                <label style="display:block;color:#9DA391;font-size:11px;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px;">Minutes</label>
+                <input type="number" value="{{ form.minutes }}" onInput="{{ onMinutes }}" placeholder="0" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:#0C0D0A;color:#F3F5EC;font-size:16px;outline:none;" />
+                <div style="display:flex;gap:8px;margin-top:8px;">
+                  <sc-for list="{{ minChips }}" as="m" hint-placeholder-count="4">
+                    <button onClick="{{ m.onClick }}" style="flex:1;padding:9px 0;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:#0C0D0A;color:#c9cdbf;cursor:pointer;font-size:13px;font-weight:600;" style-hover="border-color:#C7F536;color:#C7F536;">{{ m.label }}</button>
+                  </sc-for>
+                </div>
+              </div>
+
+              <button onClick="{{ addEntry }}" style="margin-top:2px;padding:15px;border-radius:12px;border:none;background:#C7F536;color:#0C0D0A;font-family:Barlow Condensed;font-weight:800;font-size:21px;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;" style-hover="background:#d4ff4d;">Save workout ✓</button>
+            </div>
+
+            <div style="background:#15170F;border:1px solid rgba(255,255,255,.07);border-radius:20px;padding:22px;">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;">
+                <div style="font-family:Barlow Condensed;font-weight:700;font-size:20px;text-transform:uppercase;letter-spacing:.06em;">Today</div>
+                <div style="font-family:Barlow Condensed;font-weight:800;font-size:22px;color:#C7F536;">{{ todayTotal }} <span style="font-size:12px;color:#9DA391;">min</span></div>
+              </div>
+              <sc-if value="{{ hasToday }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                  <sc-for list="{{ todayEntries }}" as="e" hint-placeholder-count="2">
+                    <div style="display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:12px;background:#0C0D0A;border:1px solid rgba(255,255,255,.05);">
+                      <div style="width:8px;height:8px;border-radius:50%;background:#C7F536;flex-shrink:0;"></div>
+                      <div style="flex:1;font-weight:600;font-size:14px;">{{ e.type }}</div>
+                      <div style="font-family:Barlow Condensed;font-weight:700;font-size:17px;">{{ e.minutes }}<span style="font-size:12px;color:#9DA391;"> min</span></div>
+                      <button onClick="{{ e.onDelete }}" style="width:26px;height:26px;border-radius:8px;border:none;background:transparent;color:#6b7061;cursor:pointer;font-size:14px;" style-hover="background:rgba(255,106,61,.15);color:#FF6A3D;">✕</button>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ noToday }}" hint-placeholder-val="{{ false }}">
+                <div style="color:#6b7061;font-size:14px;padding:24px 0;text-align:center;">Nothing logged today yet.<br>Add your first session — don't break the chain.</div>
+              </sc-if>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- BOARD -->
+        <sc-if value="{{ isBoard }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:22px;animation:flbpop .3s ease;">
+            <div style="display:flex;align-items:center;justify-content:center;gap:18px;">
+              <button onClick="{{ prevMonth }}" style="width:40px;height:40px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:#15170F;color:#F3F5EC;cursor:pointer;font-size:20px;" style-hover="border-color:#C7F536;">‹</button>
+              <div style="text-align:center;min-width:200px;">
+                <div style="font-family:Barlow Condensed;font-weight:800;font-size:30px;text-transform:uppercase;letter-spacing:.04em;line-height:1;">{{ monthLabel }}</div>
+                <div style="color:#9DA391;font-size:11px;text-transform:uppercase;letter-spacing:.14em;margin-top:4px;">Monthly leaderboard</div>
+              </div>
+              <button onClick="{{ nextMonth }}" style="width:40px;height:40px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:#15170F;color:#F3F5EC;cursor:pointer;font-size:20px;" style-hover="border-color:#C7F536;">›</button>
+            </div>
+
+            <div style="display:flex;align-items:flex-end;justify-content:center;gap:10px;">
+              <sc-if value="{{ p2 }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ p2.onOpen }}" style="display:flex;flex-direction:column;align-items:center;gap:7px;background:transparent;border:none;cursor:pointer;color:#F3F5EC;width:112px;">
+                  <div style="width:56px;height:56px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:23px;color:#0C0D0A;background:{{ p2.color }};border:3px solid #C0C7CF;">{{ p2.initials }}</div>
+                  <div style="font-weight:700;font-size:13px;text-align:center;line-height:1.1;">{{ p2.name }}</div>
+                  <div style="font-family:Barlow Condensed;font-weight:800;font-size:20px;color:#C7F536;">{{ p2.score }}</div>
+                  <div style="width:100%;height:96px;border-radius:14px 14px 0 0;background:linear-gradient(#C0C7CF,#7f8790);display:flex;align-items:flex-start;justify-content:center;padding-top:8px;font-family:Barlow Condensed;font-weight:800;font-size:34px;color:#0C0D0A;">2</div>
+                </button>
+              </sc-if>
+              <sc-if value="{{ p1 }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ p1.onOpen }}" style="display:flex;flex-direction:column;align-items:center;gap:7px;background:transparent;border:none;cursor:pointer;color:#F3F5EC;width:124px;">
+                  <div style="font-size:22px;line-height:1;">👑</div>
+                  <div style="width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:26px;color:#0C0D0A;background:{{ p1.color }};border:3px solid #FFD23F;">{{ p1.initials }}</div>
+                  <div style="font-weight:700;font-size:14px;text-align:center;line-height:1.1;">{{ p1.name }}</div>
+                  <div style="font-family:Barlow Condensed;font-weight:800;font-size:23px;color:#C7F536;">{{ p1.score }}</div>
+                  <div style="width:100%;height:128px;border-radius:14px 14px 0 0;background:linear-gradient(#FFD23F,#c99e13);display:flex;align-items:flex-start;justify-content:center;padding-top:9px;font-family:Barlow Condensed;font-weight:800;font-size:42px;color:#0C0D0A;">1</div>
+                </button>
+              </sc-if>
+              <sc-if value="{{ p3 }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ p3.onOpen }}" style="display:flex;flex-direction:column;align-items:center;gap:7px;background:transparent;border:none;cursor:pointer;color:#F3F5EC;width:112px;">
+                  <div style="width:56px;height:56px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:23px;color:#0C0D0A;background:{{ p3.color }};border:3px solid #E08A4B;">{{ p3.initials }}</div>
+                  <div style="font-weight:700;font-size:13px;text-align:center;line-height:1.1;">{{ p3.name }}</div>
+                  <div style="font-family:Barlow Condensed;font-weight:800;font-size:20px;color:#C7F536;">{{ p3.score }}</div>
+                  <div style="width:100%;height:76px;border-radius:14px 14px 0 0;background:linear-gradient(#E08A4B,#a25f2c);display:flex;align-items:flex-start;justify-content:center;padding-top:7px;font-family:Barlow Condensed;font-weight:800;font-size:30px;color:#0C0D0A;">3</div>
+                </button>
+              </sc-if>
+            </div>
+
+            <sc-if value="{{ hasRest }}" hint-placeholder-val="{{ false }}">
+              <div style="background:#15170F;border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:14px;">
+                <sc-for list="{{ boardRest }}" as="r" hint-placeholder-count="4">
+                  <button onClick="{{ r.onOpen }}" style="{{ r.rowStyle }}">
+                    <div style="width:26px;text-align:center;font-family:Barlow Condensed;font-weight:800;font-size:19px;color:#9DA391;">{{ r.rank }}</div>
+                    <div style="width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:16px;color:#0C0D0A;background:{{ r.color }};flex-shrink:0;">{{ r.initials }}</div>
+                    <div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:15px;">{{ r.name }}</div><div style="color:#9DA391;font-size:12px;">🔥 {{ r.streak }} · {{ r.minutes }} min · {{ r.sessions }} sessions</div></div>
+                    <div style="font-family:Barlow Condensed;font-weight:800;font-size:22px;color:#C7F536;">{{ r.score }}</div>
+                  </button>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <div style="background:rgba(199,245,54,.05);border:1px solid rgba(199,245,54,.18);border-radius:16px;padding:18px 20px;">
+              <div style="font-family:Barlow Condensed;font-weight:700;font-size:17px;text-transform:uppercase;letter-spacing:.06em;color:#C7F536;margin-bottom:6px;">How points work</div>
+              <div style="color:#b9bdaf;font-size:13px;line-height:1.6;">Score = Activity + Streak + Goals + Variety. Every session earns <b style="color:#F3F5EC;">10 pts + 1/min</b>. A live daily streak adds <b style="color:#F3F5EC;">15 pts × days</b>. Hit your weekly minute goal for <b style="color:#F3F5EC;">+50</b>. Mixing exercise types adds <b style="color:#F3F5EC;">+10 each</b>. Board resets every month.</div>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- PROFILE -->
+        <sc-if value="{{ isProfile }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:16px;animation:flbpop .3s ease;">
+            <button onClick="{{ goBoard }}" style="align-self:flex-start;background:transparent;border:none;color:#9DA391;cursor:pointer;font-size:14px;padding:4px 0;" style-hover="color:#C7F536;">← Leaderboard</button>
+
+            <div style="background:linear-gradient(120deg,#1c2013,#15170F);border:1px solid rgba(255,255,255,.08);border-radius:22px;padding:24px;display:flex;gap:18px;align-items:center;flex-wrap:wrap;">
+              <div style="width:72px;height:72px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:30px;color:#0C0D0A;background:{{ pView.color }};flex-shrink:0;">{{ pView.initials }}</div>
+              <div style="flex:1;min-width:180px;">
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                  <span style="font-family:Barlow Condensed;font-weight:800;font-size:32px;text-transform:uppercase;letter-spacing:.02em;line-height:1;">{{ pView.name }}</span>
+                  <sc-if value="{{ pIsMe }}" hint-placeholder-val="{{ false }}"><span style="background:#C7F536;color:#0C0D0A;font-family:Barlow Condensed;font-weight:800;font-size:12px;letter-spacing:.1em;padding:3px 8px;border-radius:6px;">YOU</span></sc-if>
+                </div>
+                <div style="color:#9DA391;font-size:14px;margin-top:6px;">Rank {{ pRankLabel }} · 🔥 {{ pStreak }} day streak</div>
+              </div>
+              <div style="text-align:right;"><div style="font-family:Barlow Condensed;font-weight:800;font-size:40px;color:#C7F536;line-height:1;">{{ pScore }}</div><div style="color:#9DA391;font-size:12px;text-transform:uppercase;letter-spacing:.1em;">points · {{ monthLabel }}</div></div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;">
+              <sc-for list="{{ pStats }}" as="c" hint-placeholder-count="4">
+                <div style="background:#15170F;border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:16px;">
+                  <div style="color:#9DA391;font-size:11px;text-transform:uppercase;letter-spacing:.1em;">{{ c.label }}</div>
+                  <div style="font-family:Barlow Condensed;font-weight:800;font-size:34px;color:{{ c.accent }};line-height:1.1;margin-top:4px;">{{ c.value }}</div>
+                </div>
+              </sc-for>
+            </div>
+
+            <sc-if value="{{ pIsMe }}" hint-placeholder-val="{{ false }}">
+              <div style="background:#15170F;border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:16px 18px;display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
+                <div><div style="font-family:Barlow Condensed;font-weight:700;font-size:16px;text-transform:uppercase;letter-spacing:.06em;">Weekly goal</div><div style="color:#9DA391;font-size:13px;">Currently {{ pGoal }} min / week</div></div>
+                <div style="display:flex;gap:8px;"><input type="number" value="{{ goalInput }}" onInput="{{ onGoal }}" style="width:110px;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:#0C0D0A;color:#F3F5EC;font-size:15px;outline:none;" /><button onClick="{{ saveGoal }}" style="padding:0 18px;border-radius:10px;border:1px solid #C7F536;background:transparent;color:#C7F536;font-weight:700;cursor:pointer;">Update</button></div>
+              </div>
+            </sc-if>
+
+            <div style="background:#15170F;border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:20px;">
+              <div style="font-family:Barlow Condensed;font-weight:700;font-size:19px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;">Activity · {{ monthLabel }}</div>
+              <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;">
+                <div style="text-align:center;color:#6b7061;font-size:11px;font-weight:600;">M</div>
+                <div style="text-align:center;color:#6b7061;font-size:11px;font-weight:600;">T</div>
+                <div style="text-align:center;color:#6b7061;font-size:11px;font-weight:600;">W</div>
+                <div style="text-align:center;color:#6b7061;font-size:11px;font-weight:600;">T</div>
+                <div style="text-align:center;color:#6b7061;font-size:11px;font-weight:600;">F</div>
+                <div style="text-align:center;color:#6b7061;font-size:11px;font-weight:600;">S</div>
+                <div style="text-align:center;color:#6b7061;font-size:11px;font-weight:600;">S</div>
+                <sc-for list="{{ calBlanks }}" as="x" hint-placeholder-count="2"><div></div></sc-for>
+                <sc-for list="{{ calCells }}" as="d" hint-placeholder-count="30">
+                  <div title="{{ d.title }}" style="aspect-ratio:1;border-radius:8px;background:{{ d.color }};border:{{ d.border }};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:{{ d.textColor }};">{{ d.day }}</div>
+                </sc-for>
+              </div>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:14px;color:#6b7061;font-size:11px;justify-content:flex-end;">
+                Less <div style="width:12px;height:12px;border-radius:4px;background:#171a10;"></div><div style="width:12px;height:12px;border-radius:4px;background:#3a4a1c;"></div><div style="width:12px;height:12px;border-radius:4px;background:#6f8f22;"></div><div style="width:12px;height:12px;border-radius:4px;background:#9fca2b;"></div><div style="width:12px;height:12px;border-radius:4px;background:#C7F536;"></div> More
+              </div>
+            </div>
+
+            <div style="background:#15170F;border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:20px;">
+              <div style="font-family:Barlow Condensed;font-weight:700;font-size:19px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;">Full history</div>
+              <sc-if value="{{ hasHistory }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;flex-direction:column;gap:16px;">
+                  <sc-for list="{{ groupedDays }}" as="g" hint-placeholder-count="4">
+                    <div>
+                      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.06);">
+                        <span style="font-family:Barlow Condensed;font-weight:700;font-size:15px;letter-spacing:.04em;text-transform:uppercase;color:#c9cdbf;">{{ g.dateLabel }}</span>
+                        <span style="font-family:Barlow Condensed;font-weight:700;font-size:15px;color:#C7F536;">{{ g.total }} min</span>
+                      </div>
+                      <div style="display:flex;flex-direction:column;gap:6px;">
+                        <sc-for list="{{ g.items }}" as="it" hint-placeholder-count="2">
+                          <div style="display:flex;align-items:center;gap:12px;">
+                            <div style="width:7px;height:7px;border-radius:50%;background:#4DD4FF;flex-shrink:0;"></div>
+                            <div style="flex:1;font-size:14px;">{{ it.type }}</div>
+                            <div style="font-family:Barlow Condensed;font-weight:700;font-size:16px;">{{ it.minutes }}<span style="font-size:11px;color:#9DA391;"> min</span></div>
+                            <sc-if value="{{ pIsMe }}" hint-placeholder-val="{{ false }}"><button onClick="{{ it.onDelete }}" style="width:24px;height:24px;border-radius:7px;border:none;background:transparent;color:#6b7061;cursor:pointer;font-size:13px;" style-hover="background:rgba(255,106,61,.15);color:#FF6A3D;">✕</button></sc-if>
+                          </div>
+                        </sc-for>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ noHistory }}" hint-placeholder-val="{{ false }}">
+                <div style="color:#6b7061;font-size:14px;padding:24px 0;text-align:center;">No workouts logged yet.</div>
+              </sc-if>
+            </div>
+          </div>
+        </sc-if>
+
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:#C7F536;color:#0C0D0A;padding:12px 22px;border-radius:999px;font-family:Barlow Condensed;font-weight:800;font-size:16px;letter-spacing:.05em;text-transform:uppercase;z-index:50;animation:flbtoast 1.8s ease forwards;box-shadow:0 8px 30px rgba(0,0,0,.45);">{{ toast }}</div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;weeklyGoalDefault&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:150,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:30,&quot;max&quot;:600,&quot;step&quot;:10,&quot;unit&quot;:&quot;min&quot;,&quot;section&quot;:&quot;Defaults&quot;},&quot;seedDemoData&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Defaults&quot;}}">
+class Component extends DCLogic {
+  KEY = 'pulse.flb.v1';
+  state = {
+    ready: false, users: [], entries: [], meId: null,
+    view: 'onboarding', tab: 'home', profileId: null, monthKey: null,
+    form: { date: '', minutes: '', type: 'Running', customType: '', adding: false },
+    nameInput: '', goalInput: 150,
+    typeOptions: ['Running', 'Cycling', 'Gym / Weights', 'Yoga', 'Swimming', 'Walking', 'HIIT', 'Sports'],
+    toast: null,
+  };
+
+  componentDidMount() {
+    this.today = this.fmt(new Date());
+    const defGoal = Number(this.props.weeklyGoalDefault) || 150;
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(this.KEY) || 'null'); } catch (e) {}
+    let users, entries, meId, typeOptions;
+    if (saved && saved.users) {
+      users = saved.users; entries = saved.entries || []; meId = saved.meId || null;
+      typeOptions = saved.typeOptions || this.state.typeOptions;
+    } else {
+      const doSeed = this.props.seedDemoData !== false;
+      const seed = doSeed ? this.seed(defGoal) : { users: [], entries: [] };
+      users = seed.users; entries = seed.entries; meId = null; typeOptions = this.state.typeOptions;
+    }
+    this.setState({
+      ready: true, users, entries, meId, typeOptions,
+      monthKey: this.monthKeyOf(new Date()),
+      view: meId ? 'app' : 'onboarding', profileId: meId,
+      goalInput: defGoal,
+      form: { ...this.state.form, date: this.today },
+    });
+  }
+
+  save() {
+    const { users, entries, meId, typeOptions } = this.state;
+    try { localStorage.setItem(this.KEY, JSON.stringify({ users, entries, meId, typeOptions })); } catch (e) {}
+  }
+  update(patch) { this.setState(patch, () => this.save()); }
+
+  // ---- date helpers ----
+  fmt(d) { return d.getFullYear() + '-' + this.pad(d.getMonth() + 1) + '-' + this.pad(d.getDate()); }
+  pad(n) { return String(n).padStart(2, '0'); }
+  parse(s) { const p = s.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); }
+  monthKeyOf(d) { return d.getFullYear() + '-' + this.pad(d.getMonth() + 1); }
+  MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  WD = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  monthLabel(mk) { const p = mk.split('-').map(Number); return this.MONTHS[p[1] - 1] + ' ' + p[0]; }
+  monShort(mk) { const p = mk.split('-').map(Number); return this.MON[p[1] - 1]; }
+  dLabel(s) { const d = this.parse(s); return this.WD[d.getDay()] + ' ' + d.getDate() + ' ' + this.MON[d.getMonth()]; }
+  weekKey(d) {
+    const t = new Date(d); t.setHours(0, 0, 0, 0);
+    t.setDate(t.getDate() + 3 - ((t.getDay() + 6) % 7));
+    const week1 = new Date(t.getFullYear(), 0, 4);
+    const wn = 1 + Math.round(((t - week1) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7);
+    return t.getFullYear() + '-W' + wn;
+  }
+
+  // ---- display helpers ----
+  initials(name) { const p = name.trim().split(/\s+/); return (((p[0] || '')[0] || '') + ((p[1] || '')[0] || '')).toUpperCase(); }
+  color(name) {
+    const pal = ['#C7F536', '#FF6A3D', '#4DD4FF', '#B78BFF', '#FF5CA8', '#33E6A0', '#FFD23F'];
+    let h = 0; for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+    return pal[h % pal.length];
+  }
+
+  // ---- scoring ----
+  userGoal(id) { const u = this.state.users.find(u => u.id === id); return (u && u.goal) || 150; }
+  currentStreak(id) {
+    const set = new Set(this.state.entries.filter(e => e.userId === id).map(e => e.date));
+    let d = new Date();
+    if (!set.has(this.fmt(d))) { d.setDate(d.getDate() - 1); if (!set.has(this.fmt(d))) return 0; }
+    let n = 0;
+    while (set.has(this.fmt(d))) { n++; d.setDate(d.getDate() - 1); }
+    return n;
+  }
+  scoreBreakdown(id, mk) {
+    const es = this.state.entries.filter(e => e.userId === id && this.monthKeyOf(this.parse(e.date)) === mk);
+    const activity = es.reduce((s, e) => s + 10 + (e.minutes || 0), 0);
+    const streak = (mk === this.monthKeyOf(new Date())) ? this.currentStreak(id) * 15 : 0;
+    const goal = this.userGoal(id);
+    const weeks = {};
+    es.forEach(e => { const w = this.weekKey(this.parse(e.date)); weeks[w] = (weeks[w] || 0) + (e.minutes || 0); });
+    let goals = 0; Object.values(weeks).forEach(m => { if (m >= goal) goals += 50; });
+    const variety = new Set(es.map(e => e.type)).size * 10;
+    return { activity, streak, goals, variety, total: activity + streak + goals + variety,
+      minutes: es.reduce((s, e) => s + (e.minutes || 0), 0), sessions: es.length };
+  }
+
+  // ---- seed ----
+  seed(defGoal) {
+    const names = ['Maya Chen', 'Diego Ruiz', 'Aisha Khan', 'Tom Becker', 'Priya Nair', 'Sam Okoro'];
+    const types = this.state.typeOptions;
+    const prob = [0.9, 0.78, 0.85, 0.5, 0.7, 0.62];
+    const users = names.map((n, i) => ({ id: 'u' + (i + 1), name: n, goal: defGoal, createdAt: Date.now() - i }));
+    const entries = []; let eid = 1; const today = new Date();
+    users.forEach((u, ui) => {
+      for (let back = 41; back >= 0; back--) {
+        const d = new Date(today); d.setDate(d.getDate() - back);
+        if (Math.random() < prob[ui]) {
+          const sessions = Math.random() < 0.18 ? 2 : 1;
+          for (let s = 0; s < sessions; s++) {
+            entries.push({ id: 'e' + (eid++), userId: u.id, date: this.fmt(d),
+              minutes: 20 + Math.floor(Math.random() * 65), type: types[Math.floor(Math.random() * types.length)], createdAt: Date.now() + eid });
+          }
+        }
+      }
+    });
+    return { users, entries };
+  }
+
+  // ---- toast ----
+  toast(msg) { this.setState({ toast: msg }); clearTimeout(this._t); this._t = setTimeout(() => this.setState({ toast: null }), 1800); }
+
+  // ---- handlers ----
+  onName = (e) => this.setState({ nameInput: e.target.value });
+  onGoal = (e) => this.setState({ goalInput: e.target.value });
+  setTab = (t) => this.setState({ tab: t });
+  goLog = () => this.setState({ tab: 'log' });
+  goBoard = () => this.setState({ tab: 'board' });
+  switchUser = () => this.setState({ view: 'onboarding' });
+  openMe = () => this.openProfile(this.state.meId);
+  openProfile = (id) => {
+    const p = { tab: 'profile', profileId: id };
+    if (id === this.state.meId) { const u = this.state.users.find(x => x.id === id); if (u) p.goalInput = u.goal || 150; }
+    this.setState(p);
+  };
+  createUser = () => {
+    const name = (this.state.nameInput || '').trim();
+    if (!name) { this.toast('Enter your name'); return; }
+    const goal = Math.max(30, Number(this.state.goalInput) || 150);
+    const id = 'u' + Date.now().toString(36);
+    this.update({ users: [...this.state.users, { id, name, goal, createdAt: Date.now() }],
+      meId: id, view: 'app', tab: 'home', profileId: id, nameInput: '' });
+    this.toast('Welcome, ' + name.split(' ')[0] + '!');
+  };
+  setForm = (patch) => this.setState({ form: { ...this.state.form, ...patch } });
+  onDate = (e) => this.setForm({ date: e.target.value });
+  onMinutes = (e) => this.setForm({ minutes: e.target.value });
+  onCustom = (e) => this.setForm({ customType: e.target.value });
+  toggleCustom = () => this.setForm({ adding: !this.state.form.adding });
+  addType = () => {
+    const t = (this.state.form.customType || '').trim();
+    if (!t) return;
+    if (!this.state.typeOptions.includes(t)) this.update({ typeOptions: [...this.state.typeOptions, t], form: { ...this.state.form, type: t, customType: '', adding: false } });
+    else this.setForm({ type: t, customType: '', adding: false });
+  };
+  addEntry = () => {
+    const f = this.state.form; const min = Number(f.minutes);
+    if (!min || min <= 0) { this.toast('Enter minutes'); return; }
+    if (!f.type) { this.toast('Pick a type'); return; }
+    this.update({ entries: [...this.state.entries, { id: 'e' + Date.now().toString(36), userId: this.state.meId, date: f.date || this.today, minutes: min, type: f.type, createdAt: Date.now() }], form: { ...f, minutes: '' } });
+    this.toast('Logged ' + min + ' min!');
+  };
+  deleteEntry = (id) => this.update({ entries: this.state.entries.filter(e => e.id !== id) });
+  shiftMonth = (delta) => {
+    const p = this.state.monthKey.split('-').map(Number);
+    const nk = this.monthKeyOf(new Date(p[0], p[1] - 1 + delta, 1));
+    if (nk > this.monthKeyOf(new Date())) return;
+    this.setState({ monthKey: nk });
+  };
+  prevMonth = () => this.shiftMonth(-1);
+  nextMonth = () => this.shiftMonth(1);
+  saveGoal = () => {
+    const g = Math.max(30, Number(this.state.goalInput) || 150);
+    this.update({ users: this.state.users.map(u => u.id === this.state.meId ? { ...u, goal: g } : u) });
+    this.toast('Goal updated');
+  };
+
+  renderVals() {
+    const S = this.state;
+    if (!S.ready) return { notReady: true, showOnboarding: false, showApp: false, hasUsers: false,
+      existingUsers: [], nameInput: '', goalInput: 150, toast: null, navTabs: [], statCards: [], meBars: [],
+      recent: [], typeChips: [], minChips: [], todayEntries: [], boardRest: [], calCells: [], calBlanks: [], groupedDays: [], pStats: [] };
+
+    const now = new Date(); const nowMK = this.monthKeyOf(now); const mk = S.monthKey || nowMK;
+    const uv = (u) => ({ id: u.id, name: u.name, initials: this.initials(u.name), color: this.color(u.name) });
+
+    const rows = S.users.map(u => { const b = this.scoreBreakdown(u.id, mk);
+      return { ...uv(u), score: b.total, minutes: b.minutes, sessions: b.sessions, streak: this.currentStreak(u.id) }; })
+      .sort((a, b) => b.score - a.score || b.minutes - a.minutes);
+    rows.forEach((r, i) => { r.rank = i + 1; r.isMe = r.id === S.meId; r.onOpen = () => this.openProfile(r.id);
+      r.rowStyle = 'display:flex;align-items:center;gap:14px;width:100%;padding:11px 12px;border-radius:14px;border:1px solid ' + (r.isMe ? '#C7F536' : 'rgba(255,255,255,.05)') + ';background:' + (r.isMe ? 'rgba(199,245,54,.07)' : 'transparent') + ';cursor:pointer;color:#F3F5EC;text-align:left;margin-bottom:6px;'; });
+
+    const p1 = rows[0] || null, p2 = rows[1] || null, p3 = rows[2] || null;
+    const boardRest = rows.slice(3);
+
+    const meUser = S.users.find(u => u.id === S.meId) || null;
+    const me = meUser ? uv(meUser) : { name: '', initials: '', color: '#C7F536' };
+    const meB = meUser ? this.scoreBreakdown(S.meId, nowMK) : { activity: 0, streak: 0, goals: 0, variety: 0, total: 0, minutes: 0, sessions: 0 };
+    const meStreak = meUser ? this.currentStreak(S.meId) : 0;
+    const meRow = rows.find(r => r.id === S.meId);
+    const meRank = meRow ? meRow.rank : null;
+
+    const h = now.getHours();
+    const greeting = (h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening') + ', ' + (me.name || '').split(' ')[0];
+    const myAll = S.entries.filter(e => e.userId === S.meId);
+    const todayCount = myAll.filter(e => e.date === this.today).length;
+    const heroStatus = todayCount > 0
+      ? '🔥 ' + todayCount + ' workout' + (todayCount > 1 ? 's' : '') + ' logged today — your streak is alive at ' + meStreak + ' days.'
+      : (meStreak > 0 ? "Don't break your " + meStreak + "-day streak — log today's session." : 'Log your first workout to start a streak.');
+
+    const statCards = [
+      { label: 'Streak', value: meStreak, sub: (meStreak === 1 ? 'day' : 'days') + ' in a row', icon: '🔥', accent: '#FF6A3D' },
+      { label: 'Score · ' + this.monShort(nowMK), value: meB.total, sub: 'this month', icon: '⚡', accent: '#C7F536' },
+      { label: 'Rank', value: meRank ? '#' + meRank : '—', sub: 'of ' + rows.length + ' athletes', icon: '🏆', accent: '#FFD23F' },
+      { label: 'Minutes', value: meB.minutes, sub: meB.sessions + ' sessions', icon: '⏱', accent: '#4DD4FF' },
+    ];
+
+    const barsOf = (b) => {
+      const arr = [
+        { label: 'Activity (10/session + 1/min)', value: b.activity, color: '#C7F536' },
+        { label: 'Streak (15 × days)', value: b.streak, color: '#FF6A3D' },
+        { label: 'Weekly goals (+50)', value: b.goals, color: '#FFD23F' },
+        { label: 'Variety (10/type)', value: b.variety, color: '#4DD4FF' },
+      ];
+      const mx = Math.max(1, ...arr.map(x => x.value));
+      arr.forEach(x => x.pct = Math.round(x.value / mx * 100) + '%');
+      return arr;
+    };
+
+    const recent = myAll.slice().sort((a, b) => a.date < b.date ? 1 : a.date > b.date ? -1 : b.createdAt - a.createdAt)
+      .slice(0, 6).map(e => ({ type: e.type, minutes: e.minutes, dateLabel: this.dLabel(e.date) }));
+
+    const chipBase = 'padding:9px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.1);cursor:pointer;font-size:14px;font-weight:600;transition:.12s;';
+    const typeChips = S.typeOptions.map(t => ({ label: t, onClick: () => this.setForm({ type: t }),
+      style: chipBase + (S.form.type === t ? 'background:#C7F536;color:#0C0D0A;border-color:#C7F536;' : 'background:#0C0D0A;color:#c9cdbf;') }));
+    const minChips = [15, 30, 45, 60].map(m => ({ label: m + 'm', onClick: () => this.setForm({ minutes: String(m) }) }));
+
+    const todayList = myAll.filter(e => e.date === this.today).sort((a, b) => b.createdAt - a.createdAt)
+      .map(e => ({ type: e.type, minutes: e.minutes, id: e.id, onDelete: () => this.deleteEntry(e.id) }));
+    const todayTotal = todayList.reduce((s, e) => s + e.minutes, 0);
+
+    // profile
+    const pid = S.profileId || S.meId;
+    const pUser = S.users.find(u => u.id === pid) || meUser;
+    const pView = pUser ? uv(pUser) : me;
+    const pB = pUser ? this.scoreBreakdown(pid, mk) : meB;
+    const pStreak = pUser ? this.currentStreak(pid) : 0;
+    const pRow = rows.find(r => r.id === pid);
+    const pRank = pRow ? pRow.rank : null;
+    const pIsMe = pid === S.meId;
+    const pGoal = pUser ? (pUser.goal || 150) : 150;
+    const pStats = [
+      { label: 'Score', value: pB.total, accent: '#C7F536' },
+      { label: 'Rank', value: pRank ? '#' + pRank : '—', accent: '#FFD23F' },
+      { label: 'Minutes', value: pB.minutes, accent: '#4DD4FF' },
+      { label: 'Streak', value: pStreak, accent: '#FF6A3D' },
+    ];
+
+    const cp = mk.split('-').map(Number); const cy = cp[0], cm = cp[1];
+    const dim = new Date(cy, cm, 0).getDate();
+    const lead = (new Date(cy, cm - 1, 1).getDay() + 6) % 7;
+    const calBlanks = Array.from({ length: lead }, () => ({}));
+    const dmap = {};
+    S.entries.filter(e => e.userId === pid && this.monthKeyOf(this.parse(e.date)) === mk).forEach(e => { dmap[e.date] = (dmap[e.date] || 0) + e.minutes; });
+    const lv = ['#171a10', '#3a4a1c', '#6f8f22', '#9fca2b', '#C7F536'];
+    const calCells = Array.from({ length: dim }, (_, i) => {
+      const day = i + 1; const ds = cy + '-' + this.pad(cm) + '-' + this.pad(day); const min = dmap[ds] || 0;
+      const level = min === 0 ? 0 : min < 20 ? 1 : min < 40 ? 2 : min < 60 ? 3 : 4;
+      return { day, color: lv[level], title: min ? min + ' min' : 'rest', isToday: ds === this.today,
+        border: ds === this.today ? '2px solid #C7F536' : '1px solid rgba(255,255,255,.05)', textColor: level >= 3 ? '#0C0D0A' : '#6b7061' };
+    });
+
+    const pEntries = S.entries.filter(e => e.userId === pid).sort((a, b) => a.date < b.date ? 1 : a.date > b.date ? -1 : b.createdAt - a.createdAt);
+    const gmap = {}; const order = [];
+    pEntries.forEach(e => {
+      if (!gmap[e.date]) { gmap[e.date] = { date: e.date, dateLabel: this.dLabel(e.date), items: [], total: 0 }; order.push(e.date); }
+      gmap[e.date].items.push({ type: e.type, minutes: e.minutes, id: e.id, onDelete: () => this.deleteEntry(e.id) });
+      gmap[e.date].total += e.minutes;
+    });
+    const groupedDays = order.map(d => gmap[d]);
+
+    const navBase = 'padding:9px 18px;border-radius:999px;border:none;cursor:pointer;font-family:Barlow Condensed;font-weight:700;font-size:16px;letter-spacing:.06em;text-transform:uppercase;transition:.15s;';
+    const navTabs = [['home', 'Home'], ['log', 'Log'], ['board', 'Board']].map(t => ({ label: t[1], onClick: () => this.setTab(t[0]),
+      style: navBase + (S.tab === t[0] ? 'background:#C7F536;color:#0C0D0A;' : 'background:transparent;color:#9DA391;') }));
+
+    const existingUsers = S.users.map(u => { const b = this.scoreBreakdown(u.id, nowMK);
+      return { ...uv(u), streak: this.currentStreak(u.id), score: b.total, onPick: () => this.update({ meId: u.id, view: 'app', tab: 'home', profileId: u.id }) }; })
+      .sort((a, b) => b.score - a.score);
+
+    return {
+      notReady: false,
+      showOnboarding: S.view === 'onboarding',
+      showApp: S.view === 'app' && !!meUser,
+      isHome: S.tab === 'home', isLog: S.tab === 'log', isBoard: S.tab === 'board', isProfile: S.tab === 'profile',
+      hasUsers: existingUsers.length > 0, existingUsers,
+      nameInput: S.nameInput, goalInput: S.goalInput, toast: S.toast,
+      openMe: this.openMe, goLog: this.goLog, switchUser: this.switchUser, goBoard: this.goBoard,
+      createUser: this.createUser, onName: this.onName, onGoal: this.onGoal,
+      onDate: this.onDate, onMinutes: this.onMinutes, onCustom: this.onCustom,
+      toggleCustom: this.toggleCustom, addType: this.addType, addEntry: this.addEntry,
+      saveGoal: this.saveGoal, prevMonth: this.prevMonth, nextMonth: this.nextMonth,
+      me, meScore: meB.total, greeting, heroStatus, monthLabel: this.monthLabel(mk),
+      navTabs, statCards, meBars: barsOf(meB),
+      recent, hasRecent: recent.length > 0, noRecent: recent.length === 0,
+      form: S.form, typeChips, minChips,
+      todayEntries: todayList, todayTotal, hasToday: todayList.length > 0, noToday: todayList.length === 0,
+      p1, p2, p3, boardRest, hasRest: boardRest.length > 0,
+      pView, pIsMe, pScore: pB.total, pStreak, pRankLabel: pRank ? '#' + pRank : '—', pGoal, pStats, pBars: barsOf(pB),
+      calBlanks, calCells,
+      groupedDays, hasHistory: groupedDays.length > 0, noHistory: groupedDays.length === 0,
+    };
+  }
+}
+</script>
+</body>
+</html>
