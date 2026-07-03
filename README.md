@@ -3,7 +3,6 @@ A fitness leaderboard app — log workouts, build a streak, and compete on a mon
 
 **Live:** https://jogendra-india.github.io/pulse/
 
-
 ## Features
 
 - Create an athlete profile with a name, weekly minute goal, and profile photo
