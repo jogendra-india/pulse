@@ -412,15 +412,25 @@ class Component extends DCLogic {
     this.loadAll(meId);
   }
 
-  async api(path, options) {
-    const res = await fetch(this.API_BASE + path, {
-      headers: { 'Content-Type': 'application/json' },
-      ...options,
-    });
-    if (!res.ok) throw new Error('Pulse API ' + res.status + ' on ' + path);
-    return res.status === 204 ? null : res.json();
+  async api(path, options = {}, timeoutMs = 5000) {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), timeoutMs);
+    try {
+      const res = await fetch(this.API_BASE + path, {
+        headers: { 'Content-Type': 'application/json' },
+        signal: ctrl.signal,
+        ...options,
+      });
+      if (!res.ok) throw new Error('Pulse API ' + res.status + ' on ' + path);
+      return res.status === 204 ? null : res.json();
+    } finally {
+      clearTimeout(t);
+    }
   }
 
+  // Backend-down fallback: reuse the last successful fetch (cached separately
+  // from the small meId/typeOptions blob so a stale-data read never clobbers
+  // "who am I on this device") instead of dumping the athlete back to onboarding.
   async loadAll(meId) {
     try {
       const [usersResp, entriesResp] = await Promise.all([
@@ -429,16 +439,27 @@ class Component extends DCLogic {
       ]);
       const users = (usersResp.results || []).map(u => ({ id: u.id, name: u.name, goal: u.goal, createdAt: u.created_at }));
       const entries = (entriesResp.results || []).map(e => ({ id: e.id, userId: e.user, date: e.date, minutes: e.minutes, type: e.type, createdAt: e.created_at }));
+      try { localStorage.setItem(this.KEY + '.cache', JSON.stringify({ users, entries, syncedAt: Date.now() })); } catch (e) {}
       const valid = meId && users.some(u => u.id === meId);
       this.setState({
-        ready: true, users, entries,
+        ready: true, users, entries, offline: false,
         meId: valid ? meId : null,
         view: valid ? 'app' : 'onboarding',
         profileId: valid ? meId : null,
       });
     } catch (e) {
-      this.setState({ ready: true, users: [], entries: [], meId: null, view: 'onboarding' });
-      this.toast('Could not reach Pulse server');
+      let cached = null;
+      try { cached = JSON.parse(localStorage.getItem(this.KEY + '.cache') || 'null'); } catch (err) {}
+      const users = (cached && cached.users) || [];
+      const entries = (cached && cached.entries) || [];
+      const valid = meId && users.some(u => u.id === meId);
+      this.setState({
+        ready: true, users, entries, offline: true,
+        meId: valid ? meId : null,
+        view: valid ? 'app' : 'onboarding',
+        profileId: valid ? meId : null,
+      });
+      this.toast(cached ? 'Offline — showing last synced data' : 'Could not reach Pulse server');
     }
   }
 
