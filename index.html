@@ -170,7 +170,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
                       <div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05);">
                         <div style="width:8px;height:8px;border-radius:50%;background:#C7F536;flex-shrink:0;"></div>
                         {{ e.photoThumb }}
-                        <div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:14px;">{{ e.type }}</div><div style="color:#6b7061;font-size:12px;">{{ e.dateLabel }}</div></div>
+                        <div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:14px;">{{ e.type }}</div><div style="color:#6b7061;font-size:12px;">{{ e.whenLabel }}</div></div>
                         <div style="font-family:Barlow Condensed;font-weight:700;font-size:18px;">{{ e.minutes }}<span style="font-size:12px;color:#9DA391;"> min</span></div>
                       </div>
                     </sc-for>
@@ -193,6 +193,11 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
               <div>
                 <label style="display:block;color:#9DA391;font-size:11px;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px;">Date</label>
                 <input type="date" value="{{ form.date }}" onInput="{{ onDate }}" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:#0C0D0A;color:#F3F5EC;font-size:15px;outline:none;" />
+              </div>
+
+              <div>
+                <label style="display:block;color:#9DA391;font-size:11px;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px;">Start time</label>
+                <input type="time" value="{{ form.time }}" onInput="{{ onTime }}" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:#0C0D0A;color:#F3F5EC;font-size:15px;outline:none;" />
               </div>
 
               <div>
@@ -229,6 +234,11 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
                 </div>
               </div>
 
+              <div>
+                <label style="display:block;color:#9DA391;font-size:11px;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px;">Notes (optional)</label>
+                <textarea value="{{ form.notes }}" onInput="{{ onNotes }}" placeholder="Sets, reps, route, how it felt…" rows="3" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:#0C0D0A;color:#F3F5EC;font-size:14px;outline:none;font-family:inherit;resize:vertical;"></textarea>
+              </div>
+
               <button onClick="{{ addEntry }}" style="margin-top:2px;padding:15px;border-radius:12px;border:none;background:#C7F536;color:#0C0D0A;font-family:Barlow Condensed;font-weight:800;font-size:21px;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;" style-hover="background:#d4ff4d;">{{ saveButtonLabel }}</button>
               <sc-if value="{{ isEditingEntry }}" hint-placeholder-val="{{ false }}">
                 <button onClick="{{ cancelEditEntry }}" style="background:transparent;border:none;color:#9DA391;cursor:pointer;font-size:13px;padding:2px 0;" style-hover="color:#F3F5EC;">Cancel edit</button>
@@ -246,8 +256,17 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
                     <div style="display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:12px;background:#0C0D0A;border:1px solid rgba(255,255,255,.05);">
                       <div style="width:8px;height:8px;border-radius:50%;background:#C7F536;flex-shrink:0;"></div>
                       {{ e.photoThumb }}
-                      <div style="flex:1;font-weight:600;font-size:14px;">{{ e.type }}</div>
+                      <div style="flex:1;min-width:0;">
+                        <div style="font-weight:600;font-size:14px;">{{ e.type }}</div>
+                        <div style="color:#6b7061;font-size:12px;">{{ e.timeLabel }}</div>
+                        <sc-if value="{{ e.notes }}" hint-placeholder-val="{{ false }}">
+                          <div style="color:#9DA391;font-size:12px;font-style:italic;margin-top:2px;">{{ e.notes }}</div>
+                        </sc-if>
+                      </div>
                       <div style="font-family:Barlow Condensed;font-weight:700;font-size:17px;">{{ e.minutes }}<span style="font-size:12px;color:#9DA391;"> min</span></div>
+                      <sc-if value="{{ e.editable }}" hint-placeholder-val="{{ false }}">
+                        <button onClick="{{ e.onEdit }}" style="width:26px;height:26px;border-radius:8px;border:none;background:transparent;color:#6b7061;cursor:pointer;font-size:13px;" style-hover="background:rgba(199,245,54,.15);color:#C7F536;">✎</button>
+                      </sc-if>
                       <button onClick="{{ e.onRequestDelete }}" style="width:26px;height:26px;border-radius:8px;border:none;background:transparent;color:#6b7061;cursor:pointer;font-size:14px;" style-hover="background:rgba(255,106,61,.15);color:#FF6A3D;">✕</button>
                     </div>
                   </sc-for>
@@ -402,8 +421,15 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
                           <div style="display:flex;align-items:center;gap:12px;">
                             <div style="width:7px;height:7px;border-radius:50%;background:#4DD4FF;flex-shrink:0;"></div>
                             {{ it.photoThumb }}
-                            <div style="flex:1;font-size:14px;">{{ it.type }}</div>
+                            <div style="flex:1;min-width:0;">
+                              <div style="font-size:14px;">{{ it.type }}</div>
+                              <div style="color:#6b7061;font-size:11px;">{{ it.timeLabel }}</div>
+                              <sc-if value="{{ it.notes }}" hint-placeholder-val="{{ false }}">
+                                <div style="color:#9DA391;font-size:11px;font-style:italic;margin-top:2px;">{{ it.notes }}</div>
+                              </sc-if>
+                            </div>
                             <div style="font-family:Barlow Condensed;font-weight:700;font-size:16px;">{{ it.minutes }}<span style="font-size:11px;color:#9DA391;"> min</span></div>
+                            <sc-if value="{{ it.editable }}" hint-placeholder-val="{{ false }}"><button onClick="{{ it.onEdit }}" style="width:24px;height:24px;border-radius:7px;border:none;background:transparent;color:#6b7061;cursor:pointer;font-size:12px;" style-hover="background:rgba(199,245,54,.15);color:#C7F536;">✎</button></sc-if>
                             <sc-if value="{{ pIsMe }}" hint-placeholder-val="{{ false }}"><button onClick="{{ it.onRequestDelete }}" style="width:24px;height:24px;border-radius:7px;border:none;background:transparent;color:#6b7061;cursor:pointer;font-size:13px;" style-hover="background:rgba(255,106,61,.15);color:#FF6A3D;">✕</button></sc-if>
                           </div>
                         </sc-for>
@@ -452,7 +478,7 @@ class Component extends DCLogic {
   state = {
     ready: false, users: [], entries: [], meId: null,
     view: 'onboarding', tab: 'home', profileId: null, monthKey: null,
-    form: { date: '', minutes: '', type: 'Running', customType: '', adding: false },
+    form: { date: '', minutes: '', type: 'Running', customType: '', adding: false, time: '', notes: '' },
     nameInput: '', goalInput: 150,
     avatarFile: null, avatarPreview: null,  // pending pick, not yet saved
     entryPhotoFile: null, entryPhotoPreview: null,
@@ -482,7 +508,7 @@ class Component extends DCLogic {
       typeOptions,
       monthKey: this.monthKeyOf(new Date()),
       goalInput: defGoal,
-      form: { ...this.state.form, date: this.today },
+      form: { ...this.state.form, date: this.today, time: this.nowTimeStr() },
     });
     this.loadAll(meId);
   }
@@ -514,7 +540,7 @@ class Component extends DCLogic {
         this.api('/entries/?limit=2000'),
       ]);
       const users = (usersResp.results || []).map(u => ({ id: u.id, name: u.name, goal: u.goal, avatar: u.avatar || null, createdAt: u.created_at }));
-      const entries = (entriesResp.results || []).map(e => ({ id: e.id, userId: e.user, date: e.date, minutes: e.minutes, type: e.type, photo: e.photo || null, createdAt: e.created_at }));
+      const entries = (entriesResp.results || []).map(e => ({ id: e.id, userId: e.user, date: e.date, minutes: e.minutes, type: e.type, notes: e.notes || '', photo: e.photo || null, startTime: e.start_time || null, createdAt: e.created_at }));
       try { localStorage.setItem(this.KEY + '.cache', JSON.stringify({ users, entries, syncedAt: Date.now() })); } catch (e) {}
       const valid = meId && users.some(u => u.id === meId);
       this.setState({
@@ -548,6 +574,13 @@ class Component extends DCLogic {
   // ---- date helpers ----
   fmt(d) { return d.getFullYear() + '-' + this.pad(d.getMonth() + 1) + '-' + this.pad(d.getDate()); }
   pad(n) { return String(n).padStart(2, '0'); }
+  nowTimeStr(d) { d = d || new Date(); return this.pad(d.getHours()) + ':' + this.pad(d.getMinutes()); }
+  timeLabel(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  }
   parse(s) { const p = s.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); }
   monthKeyOf(d) { return d.getFullYear() + '-' + this.pad(d.getMonth() + 1); }
   MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -666,7 +699,9 @@ class Component extends DCLogic {
   };
   setForm = (patch) => this.setState({ form: { ...this.state.form, ...patch } });
   onDate = (e) => this.setForm({ date: e.target.value });
+  onTime = (e) => this.setForm({ time: e.target.value });
   onMinutes = (e) => this.setForm({ minutes: e.target.value });
+  onNotes = (e) => this.setForm({ notes: e.target.value });
   onCustom = (e) => this.setForm({ customType: e.target.value });
   toggleCustom = () => this.setForm({ adding: !this.state.form.adding });
   addType = () => {
@@ -680,22 +715,26 @@ class Component extends DCLogic {
     if (!min || min <= 0) { this.toast('Enter minutes'); return; }
     if (!f.type) { this.toast('Pick a type'); return; }
     const editingId = this.state.editingEntryId;
+    const dateStr = f.date || this.today;
+    const timeStr = f.time || this.nowTimeStr();
     const fd = new FormData();
     if (!editingId) fd.append('user', this.state.meId);
-    fd.append('date', f.date || this.today);
+    fd.append('date', dateStr);
+    fd.append('start_time', dateStr + 'T' + timeStr + ':00');
     fd.append('minutes', String(min));
     fd.append('type', f.type);
+    fd.append('notes', f.notes || '');
     if (this.state.entryPhotoFile) fd.append('photo', this.state.entryPhotoFile);
     const req = editingId
       ? this.api('/entries/' + editingId + '/', { method: 'PATCH', body: fd })
       : this.api('/entries/', { method: 'POST', body: fd });
     req.then(e => {
-        const entry = { id: e.id, userId: e.user, date: e.date, minutes: e.minutes, type: e.type, photo: e.photo || null, createdAt: e.created_at };
+        const entry = { id: e.id, userId: e.user, date: e.date, minutes: e.minutes, type: e.type, notes: e.notes || '', photo: e.photo || null, startTime: e.start_time || null, createdAt: e.created_at };
         this.setState({
           entries: editingId
             ? this.state.entries.map(x => x.id === editingId ? entry : x)
             : [...this.state.entries, entry],
-          form: { ...f, minutes: '' }, editingEntryId: null,
+          form: { ...f, minutes: '', notes: '' }, editingEntryId: null,
           entryPhotoFile: null, entryPhotoPreview: null,
         });
         this.toast(editingId ? 'Workout updated' : 'Logged ' + min + ' min!');
@@ -703,16 +742,18 @@ class Component extends DCLogic {
       .catch(() => this.toast(editingId ? 'Could not update — edit window may have closed' : 'Could not save workout'));
   };
   startEditEntry = (entry) => {
+    const d = entry.startTime ? new Date(entry.startTime) : null;
+    const timeStr = d && !isNaN(d.getTime()) ? this.nowTimeStr(d) : this.nowTimeStr();
     this.setState({
       tab: 'log', editingEntryId: entry.id,
-      form: { ...this.state.form, date: entry.date, minutes: String(entry.minutes), type: entry.type, adding: false, customType: '' },
+      form: { ...this.state.form, date: entry.date, minutes: String(entry.minutes), type: entry.type, time: timeStr, notes: entry.notes || '', adding: false, customType: '' },
       entryPhotoFile: null, entryPhotoPreview: entry.photo || null,
     });
   };
   cancelEditEntry = () => {
     this.setState({
       editingEntryId: null,
-      form: { ...this.state.form, date: this.today, minutes: '' },
+      form: { ...this.state.form, date: this.today, minutes: '', time: this.nowTimeStr(), notes: '' },
       entryPhotoFile: null, entryPhotoPreview: null,
     });
   };
@@ -817,7 +858,7 @@ class Component extends DCLogic {
     const editableNow = (e) => (Date.now() - new Date(e.createdAt).getTime()) < 10 * 60 * 1000;
     const photoThumb = (url) => url ? React.createElement('img', { src: url, style: { width: '28px', height: '28px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0 } }) : null;
     const recent = myAll.slice().sort((a, b) => a.date < b.date ? 1 : a.date > b.date ? -1 : b.createdAt - a.createdAt)
-      .slice(0, 6).map(e => ({ type: e.type, minutes: e.minutes, dateLabel: this.dLabel(e.date), photoThumb: photoThumb(e.photo) }));
+      .slice(0, 6).map(e => ({ type: e.type, minutes: e.minutes, whenLabel: this.dLabel(e.date) + (e.startTime ? ' · ' + this.timeLabel(e.startTime) : ''), photoThumb: photoThumb(e.photo) }));
 
     const chipBase = 'padding:9px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.1);cursor:pointer;font-size:14px;font-weight:600;transition:.12s;';
     const typeChips = S.typeOptions.map(t => ({ label: t, onClick: () => this.setForm({ type: t }),
@@ -825,7 +866,7 @@ class Component extends DCLogic {
     const minChips = [15, 30, 45, 60].map(m => ({ label: m + 'm', onClick: () => this.setForm({ minutes: String(m) }) }));
 
     const todayList = myAll.filter(e => e.date === this.today).sort((a, b) => b.createdAt - a.createdAt)
-      .map(e => ({ type: e.type, minutes: e.minutes, id: e.id, onDelete: () => this.deleteEntry(e.id), photoThumb: photoThumb(e.photo), editable: editableNow(e), onEdit: () => this.startEditEntry(e), onRequestDelete: () => this.requestDeleteEntry(e.id) }));
+      .map(e => ({ type: e.type, minutes: e.minutes, id: e.id, timeLabel: this.timeLabel(e.startTime) || 'Time not recorded', notes: e.notes, onDelete: () => this.deleteEntry(e.id), photoThumb: photoThumb(e.photo), editable: editableNow(e), onEdit: () => this.startEditEntry(e), onRequestDelete: () => this.requestDeleteEntry(e.id) }));
     const todayTotal = todayList.reduce((s, e) => s + e.minutes, 0);
 
     // profile
@@ -863,7 +904,7 @@ class Component extends DCLogic {
     const gmap = {}; const order = [];
     pEntries.forEach(e => {
       if (!gmap[e.date]) { gmap[e.date] = { date: e.date, dateLabel: this.dLabel(e.date), items: [], total: 0 }; order.push(e.date); }
-      gmap[e.date].items.push({ type: e.type, minutes: e.minutes, id: e.id, onDelete: () => this.deleteEntry(e.id), photoThumb: photoThumb(e.photo), editable: editableNow(e), onEdit: () => this.startEditEntry(e), onRequestDelete: () => this.requestDeleteEntry(e.id) });
+      gmap[e.date].items.push({ type: e.type, minutes: e.minutes, id: e.id, timeLabel: this.timeLabel(e.startTime) || 'Time not recorded', notes: e.notes, onDelete: () => this.deleteEntry(e.id), photoThumb: photoThumb(e.photo), editable: editableNow(e) && pIsMe, onEdit: () => this.startEditEntry(e), onRequestDelete: () => this.requestDeleteEntry(e.id) });
       gmap[e.date].total += e.minutes;
     });
     const groupedDays = order.map(d => gmap[d]);
