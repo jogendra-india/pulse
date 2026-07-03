@@ -485,6 +485,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
               <input type="password" value="{{ newPasswordInput }}" onInput="{{ onNewPasswordInput }}" placeholder="New password" style="flex:1;min-width:0;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:#0C0D0A;color:#F3F5EC;font-size:15px;outline:none;" />
               <button onClick="{{ saveNewPassword }}" style="padding:0 16px;border-radius:10px;border:1px solid #C7F536;background:transparent;color:#C7F536;font-weight:700;cursor:pointer;">Update</button>
             </div>
+            <button onClick="{{ logout }}" style="align-self:flex-start;background:transparent;border:none;color:#FF6A3D;cursor:pointer;font-size:13px;padding:2px 0;" style-hover="color:#ff8259;">Log out</button>
           </div>
         </sc-if>
         <button onClick="{{ closeAvatarViewer }}" style="background:transparent;border:none;color:#9DA391;cursor:pointer;font-size:14px;padding:2px 0;" style-hover="color:#F3F5EC;">Close</button>
@@ -787,6 +788,9 @@ class Component extends DCLogic {
   };
   openAvatarViewer = (id) => this.setState({ avatarViewerUserId: id });
   closeAvatarViewer = () => this.setState({ avatarViewerUserId: null });
+  logout = () => this.setState({
+    view: 'onboarding', meId: null, authToken: null, profileId: null, avatarViewerUserId: null,
+  }, () => this.save());
   setTab = (t) => this.setState({ tab: t });
   goLog = () => this.setState({ tab: 'log' });
   goBoard = () => this.setState({ tab: 'board' });
@@ -1130,6 +1134,7 @@ class Component extends DCLogic {
       avatarViewerIsMe: !!(avatarViewerUser && avatarViewerUser.id === S.meId),
       avatarViewerActionLabel: avatarViewerUser && avatarViewerUser.avatar ? 'Change photo' : 'Add photo',
       closeAvatarViewer: this.closeAvatarViewer,
+      logout: this.logout,
       photoLightboxOpen: !!S.photoLightboxUrl, photoLightboxUrl: S.photoLightboxUrl,
       closePhotoLightbox: this.closePhotoLightbox,
       toggleCustom: this.toggleCustom, addType: this.addType, addEntry: this.addEntry,
