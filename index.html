@@ -124,7 +124,6 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
               <div style="color:#C7F536;font-size:12px;font-family:Barlow Condensed;font-weight:700;letter-spacing:.04em;">{{ meScore }} PTS</div>
             </button>
           </div>
-          <button onClick="{{ switchUser }}" title="Switch athlete" style="padding:9px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.08);background:transparent;color:#9DA391;cursor:pointer;font-size:13px;" style-hover="color:#F3F5EC;border-color:#C7F536;">Switch</button>
         </div>
       </div>
 
@@ -791,7 +790,6 @@ class Component extends DCLogic {
   setTab = (t) => this.setState({ tab: t });
   goLog = () => this.setState({ tab: 'log' });
   goBoard = () => this.setState({ tab: 'board' });
-  switchUser = () => this.setState({ view: 'onboarding', meId: null, authToken: null, profileId: null }, () => this.save());
   openMe = () => this.openProfile(this.state.meId);
   openProfile = (id) => {
     const p = { tab: 'profile', profileId: id };
@@ -1088,7 +1086,7 @@ class Component extends DCLogic {
       isHome: S.tab === 'home', isLog: S.tab === 'log', isBoard: S.tab === 'board', isProfile: S.tab === 'profile',
       hasUsers: existingUsers.length > 0, existingUsers,
       nameInput: S.nameInput, goalInput: S.goalInput, toast: S.toast,
-      openMe: this.openMe, goLog: this.goLog, switchUser: this.switchUser, goBoard: this.goBoard,
+      openMe: this.openMe, goLog: this.goLog, goBoard: this.goBoard,
       createUser: this.createUser, onName: this.onName, onGoal: this.onGoal,
       loginTargetOpen: !!S.loginTargetId,
       loginTargetName: (S.users.find(u => u.id === S.loginTargetId) || {}).name || '',
