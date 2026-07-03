@@ -383,9 +383,10 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
 
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;weeklyGoalDefault&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:150,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:30,&quot;max&quot;:600,&quot;step&quot;:10,&quot;unit&quot;:&quot;min&quot;,&quot;section&quot;:&quot;Defaults&quot;},&quot;seedDemoData&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Defaults&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;weeklyGoalDefault&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:150,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:30,&quot;max&quot;:600,&quot;step&quot;:10,&quot;unit&quot;:&quot;min&quot;,&quot;section&quot;:&quot;Defaults&quot;}}">
 class Component extends DCLogic {
   KEY = 'pulse.flb.v1';
+  API_BASE = 'https://ledgerbal.com/api/pulse';
   state = {
     ready: false, users: [], entries: [], meId: null,
     view: 'onboarding', tab: 'home', profileId: null, monthKey: null,
@@ -400,27 +401,50 @@ class Component extends DCLogic {
     const defGoal = Number(this.props.weeklyGoalDefault) || 150;
     let saved = null;
     try { saved = JSON.parse(localStorage.getItem(this.KEY) || 'null'); } catch (e) {}
-    let users, entries, meId, typeOptions;
-    if (saved && saved.users) {
-      users = saved.users; entries = saved.entries || []; meId = saved.meId || null;
-      typeOptions = saved.typeOptions || this.state.typeOptions;
-    } else {
-      const doSeed = this.props.seedDemoData !== false;
-      const seed = doSeed ? this.seed(defGoal) : { users: [], entries: [] };
-      users = seed.users; entries = seed.entries; meId = null; typeOptions = this.state.typeOptions;
-    }
+    const meId = (saved && saved.meId) || null;
+    const typeOptions = (saved && saved.typeOptions) || this.state.typeOptions;
     this.setState({
-      ready: true, users, entries, meId, typeOptions,
+      typeOptions,
       monthKey: this.monthKeyOf(new Date()),
-      view: meId ? 'app' : 'onboarding', profileId: meId,
       goalInput: defGoal,
       form: { ...this.state.form, date: this.today },
     });
+    this.loadAll(meId);
+  }
+
+  async api(path, options) {
+    const res = await fetch(this.API_BASE + path, {
+      headers: { 'Content-Type': 'application/json' },
+      ...options,
+    });
+    if (!res.ok) throw new Error('Pulse API ' + res.status + ' on ' + path);
+    return res.status === 204 ? null : res.json();
+  }
+
+  async loadAll(meId) {
+    try {
+      const [usersResp, entriesResp] = await Promise.all([
+        this.api('/users/?limit=500'),
+        this.api('/entries/?limit=2000'),
+      ]);
+      const users = (usersResp.results || []).map(u => ({ id: u.id, name: u.name, goal: u.goal, createdAt: u.created_at }));
+      const entries = (entriesResp.results || []).map(e => ({ id: e.id, userId: e.user, date: e.date, minutes: e.minutes, type: e.type, createdAt: e.created_at }));
+      const valid = meId && users.some(u => u.id === meId);
+      this.setState({
+        ready: true, users, entries,
+        meId: valid ? meId : null,
+        view: valid ? 'app' : 'onboarding',
+        profileId: valid ? meId : null,
+      });
+    } catch (e) {
+      this.setState({ ready: true, users: [], entries: [], meId: null, view: 'onboarding' });
+      this.toast('Could not reach Pulse server');
+    }
   }
 
   save() {
-    const { users, entries, meId, typeOptions } = this.state;
-    try { localStorage.setItem(this.KEY, JSON.stringify({ users, entries, meId, typeOptions })); } catch (e) {}
+    const { meId, typeOptions } = this.state;
+    try { localStorage.setItem(this.KEY, JSON.stringify({ meId, typeOptions })); } catch (e) {}
   }
   update(patch) { this.setState(patch, () => this.save()); }
 
@@ -474,29 +498,7 @@ class Component extends DCLogic {
       minutes: es.reduce((s, e) => s + (e.minutes || 0), 0), sessions: es.length };
   }
 
-  // ---- seed ----
-  seed(defGoal) {
-    const names = ['Maya Chen', 'Diego Ruiz', 'Aisha Khan', 'Tom Becker', 'Priya Nair', 'Sam Okoro'];
-    const types = this.state.typeOptions;
-    const prob = [0.9, 0.78, 0.85, 0.5, 0.7, 0.62];
-    const users = names.map((n, i) => ({ id: 'u' + (i + 1), name: n, goal: defGoal, createdAt: Date.now() - i }));
-    const entries = []; let eid = 1; const today = new Date();
-    users.forEach((u, ui) => {
-      for (let back = 41; back >= 0; back--) {
-        const d = new Date(today); d.setDate(d.getDate() - back);
-        if (Math.random() < prob[ui]) {
-          const sessions = Math.random() < 0.18 ? 2 : 1;
-          for (let s = 0; s < sessions; s++) {
-            entries.push({ id: 'e' + (eid++), userId: u.id, date: this.fmt(d),
-              minutes: 20 + Math.floor(Math.random() * 65), type: types[Math.floor(Math.random() * types.length)], createdAt: Date.now() + eid });
-          }
-        }
-      }
-    });
-    return { users, entries };
-  }
-
-  // ---- toast ----
+// ---- toast ----
   toast(msg) { this.setState({ toast: msg }); clearTimeout(this._t); this._t = setTimeout(() => this.setState({ toast: null }), 1800); }
 
   // ---- handlers ----
@@ -516,10 +518,14 @@ class Component extends DCLogic {
     const name = (this.state.nameInput || '').trim();
     if (!name) { this.toast('Enter your name'); return; }
     const goal = Math.max(30, Number(this.state.goalInput) || 150);
-    const id = 'u' + Date.now().toString(36);
-    this.update({ users: [...this.state.users, { id, name, goal, createdAt: Date.now() }],
-      meId: id, view: 'app', tab: 'home', profileId: id, nameInput: '' });
-    this.toast('Welcome, ' + name.split(' ')[0] + '!');
+    this.api('/users/', { method: 'POST', body: JSON.stringify({ name, goal }) })
+      .then(u => {
+        const user = { id: u.id, name: u.name, goal: u.goal, createdAt: u.created_at };
+        this.update({ users: [...this.state.users, user],
+          meId: user.id, view: 'app', tab: 'home', profileId: user.id, nameInput: '' });
+        this.toast('Welcome, ' + name.split(' ')[0] + '!');
+      })
+      .catch(() => this.toast('Could not create profile'));
   };
   setForm = (patch) => this.setState({ form: { ...this.state.form, ...patch } });
   onDate = (e) => this.setForm({ date: e.target.value });
@@ -536,10 +542,20 @@ class Component extends DCLogic {
     const f = this.state.form; const min = Number(f.minutes);
     if (!min || min <= 0) { this.toast('Enter minutes'); return; }
     if (!f.type) { this.toast('Pick a type'); return; }
-    this.update({ entries: [...this.state.entries, { id: 'e' + Date.now().toString(36), userId: this.state.meId, date: f.date || this.today, minutes: min, type: f.type, createdAt: Date.now() }], form: { ...f, minutes: '' } });
-    this.toast('Logged ' + min + ' min!');
+    const payload = { user: this.state.meId, date: f.date || this.today, minutes: min, type: f.type };
+    this.api('/entries/', { method: 'POST', body: JSON.stringify(payload) })
+      .then(e => {
+        const entry = { id: e.id, userId: e.user, date: e.date, minutes: e.minutes, type: e.type, createdAt: e.created_at };
+        this.setState({ entries: [...this.state.entries, entry], form: { ...f, minutes: '' } });
+        this.toast('Logged ' + min + ' min!');
+      })
+      .catch(() => this.toast('Could not save workout'));
   };
-  deleteEntry = (id) => this.update({ entries: this.state.entries.filter(e => e.id !== id) });
+  deleteEntry = (id) => {
+    this.api('/entries/' + id + '/', { method: 'DELETE' })
+      .then(() => this.setState({ entries: this.state.entries.filter(e => e.id !== id) }))
+      .catch(() => this.toast('Could not delete workout'));
+  };
   shiftMonth = (delta) => {
     const p = this.state.monthKey.split('-').map(Number);
     const nk = this.monthKeyOf(new Date(p[0], p[1] - 1 + delta, 1));
@@ -550,8 +566,12 @@ class Component extends DCLogic {
   nextMonth = () => this.shiftMonth(1);
   saveGoal = () => {
     const g = Math.max(30, Number(this.state.goalInput) || 150);
-    this.update({ users: this.state.users.map(u => u.id === this.state.meId ? { ...u, goal: g } : u) });
-    this.toast('Goal updated');
+    this.api('/users/' + this.state.meId + '/', { method: 'PATCH', body: JSON.stringify({ goal: g }) })
+      .then(() => {
+        this.setState({ users: this.state.users.map(u => u.id === this.state.meId ? { ...u, goal: g } : u) });
+        this.toast('Goal updated');
+      })
+      .catch(() => this.toast('Could not update goal'));
   };
 
   renderVals() {
