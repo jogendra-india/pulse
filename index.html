@@ -28,6 +28,15 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
 
 <div style="min-height:100vh;background:radial-gradient(1200px 620px at 72% -12%, #17190f 0%, #0C0D0A 55%);color:#F3F5EC;font-family:Archivo,system-ui,-apple-system,sans-serif;">
 
+  <sc-if value="{{ locked }}" hint-placeholder-val="{{ false }}">
+    <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;gap:22px;">
+      <div style="font-family:Barlow Condensed;font-weight:800;font-size:50px;letter-spacing:.04em;">PULSE<span style="color:#C7F536;">.</span></div>
+      <div style="color:#9DA391;font-size:13px;letter-spacing:.14em;text-transform:uppercase;">Enter PIN to continue</div>
+      <input type="password" inputmode="numeric" maxlength="4" value="{{ pinInput }}" onInput="{{ onPinInput }}" onKeyDown="{{ onPinKeyDown }}" placeholder="••••" style="width:180px;text-align:center;letter-spacing:.5em;font-size:26px;padding:14px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:#15170F;color:#F3F5EC;outline:none;" />
+      <button onClick="{{ submitPin }}" style="padding:14px 32px;border-radius:12px;border:none;background:#C7F536;color:#0C0D0A;font-family:Barlow Condensed;font-weight:800;font-size:18px;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;">Unlock →</button>
+    </div>
+  </sc-if>
+
   <sc-if value="{{ notReady }}" hint-placeholder-val="{{ true }}">
     <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;">
       <div style="font-family:Barlow Condensed;font-weight:800;font-size:60px;letter-spacing:.04em;">PULSE<span style="color:#C7F536;">.</span></div>
@@ -48,7 +57,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
             <div style="font-family:Barlow Condensed;font-weight:700;font-size:19px;text-transform:uppercase;letter-spacing:.08em;color:#9DA391;">Jump back in</div>
             <sc-for list="{{ existingUsers }}" as="u" hint-placeholder-count="3">
               <button onClick="{{ u.onPick }}" style="display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.08);background:#15170F;cursor:pointer;text-align:left;color:#F3F5EC;transition:.15s;" style-hover="border-color:#C7F536;background:#1b1e13;">
-                <div style="width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:20px;color:#0C0D0A;background:{{ u.color }};">{{ u.initials }}</div>
+                <div style="width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:20px;color:#0C0D0A;background:{{ u.color }};">{{ u.avatarNode }}</div>
                 <div style="flex:1;min-width:0;">
                   <div style="font-weight:700;font-size:16px;">{{ u.name }}</div>
                   <div style="color:#9DA391;font-size:13px;">🔥 {{ u.streak }} day streak · {{ u.score }} pts</div>
@@ -64,6 +73,10 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
 
         <div style="background:#15170F;border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:22px;display:flex;flex-direction:column;gap:14px;">
           <div style="font-family:Barlow Condensed;font-weight:700;font-size:22px;text-transform:uppercase;letter-spacing:.06em;">Create your profile</div>
+          <div style="display:flex;align-items:center;gap:14px;">
+            <div style="width:56px;height:56px;border-radius:16px;overflow:hidden;flex-shrink:0;background:#0C0D0A;display:flex;align-items:center;justify-content:center;font-size:22px;">{{ avatarPreviewNode }}</div>
+            <label style="cursor:pointer;color:#C7F536;font-size:13px;font-weight:700;">Add photo<input type="file" accept="image/*" onChange="{{ onAvatarPick }}" style="display:none;" /></label>
+          </div>
           <div>
             <label style="display:block;color:#9DA391;font-size:11px;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px;">Your name</label>
             <input value="{{ nameInput }}" onInput="{{ onName }}" placeholder="e.g. Alex Rivera" style="width:100%;padding:13px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:#0C0D0A;color:#F3F5EC;font-size:16px;outline:none;" />
@@ -91,7 +104,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
           </div>
           <div style="flex:1;"></div>
           <button onClick="{{ openMe }}" style="display:flex;align-items:center;gap:10px;padding:6px 12px 6px 6px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:#15170F;cursor:pointer;color:#F3F5EC;" style-hover="border-color:#C7F536;">
-            <div style="width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:16px;color:#0C0D0A;background:{{ me.color }};">{{ me.initials }}</div>
+            <div style="width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:16px;color:#0C0D0A;background:{{ me.color }};">{{ me.avatarNode }}</div>
             <div style="text-align:left;line-height:1.1;">
               <div style="font-weight:700;font-size:14px;">{{ me.name }}</div>
               <div style="color:#C7F536;font-size:12px;font-family:Barlow Condensed;font-weight:700;letter-spacing:.04em;">{{ meScore }} PTS</div>
@@ -151,6 +164,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
                     <sc-for list="{{ recent }}" as="e" hint-placeholder-count="5">
                       <div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05);">
                         <div style="width:8px;height:8px;border-radius:50%;background:#C7F536;flex-shrink:0;"></div>
+                        {{ e.photoThumb }}
                         <div style="flex:1;min-width:0;"><div style="font-weight:600;font-size:14px;">{{ e.type }}</div><div style="color:#6b7061;font-size:12px;">{{ e.dateLabel }}</div></div>
                         <div style="font-family:Barlow Condensed;font-weight:700;font-size:18px;">{{ e.minutes }}<span style="font-size:12px;color:#9DA391;"> min</span></div>
                       </div>
@@ -193,6 +207,14 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
               </div>
 
               <div>
+                <label style="display:block;color:#9DA391;font-size:11px;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px;">Photo (optional)</label>
+                <div style="display:flex;align-items:center;gap:12px;">
+                  <div style="width:52px;height:52px;border-radius:12px;overflow:hidden;flex-shrink:0;background:#0C0D0A;display:flex;align-items:center;justify-content:center;font-size:20px;">{{ entryPhotoNode }}</div>
+                  <label style="cursor:pointer;color:#C7F536;font-size:13px;font-weight:700;">{{ entryPhotoLabel }}<input type="file" accept="image/*" onChange="{{ onEntryPhotoPick }}" style="display:none;" /></label>
+                </div>
+              </div>
+
+              <div>
                 <label style="display:block;color:#9DA391;font-size:11px;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px;">Minutes</label>
                 <input type="number" value="{{ form.minutes }}" onInput="{{ onMinutes }}" placeholder="0" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:#0C0D0A;color:#F3F5EC;font-size:16px;outline:none;" />
                 <div style="display:flex;gap:8px;margin-top:8px;">
@@ -215,6 +237,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
                   <sc-for list="{{ todayEntries }}" as="e" hint-placeholder-count="2">
                     <div style="display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:12px;background:#0C0D0A;border:1px solid rgba(255,255,255,.05);">
                       <div style="width:8px;height:8px;border-radius:50%;background:#C7F536;flex-shrink:0;"></div>
+                      {{ e.photoThumb }}
                       <div style="flex:1;font-weight:600;font-size:14px;">{{ e.type }}</div>
                       <div style="font-family:Barlow Condensed;font-weight:700;font-size:17px;">{{ e.minutes }}<span style="font-size:12px;color:#9DA391;"> min</span></div>
                       <button onClick="{{ e.onDelete }}" style="width:26px;height:26px;border-radius:8px;border:none;background:transparent;color:#6b7061;cursor:pointer;font-size:14px;" style-hover="background:rgba(255,106,61,.15);color:#FF6A3D;">✕</button>
@@ -244,7 +267,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
             <div style="display:flex;align-items:flex-end;justify-content:center;gap:10px;">
               <sc-if value="{{ p2 }}" hint-placeholder-val="{{ false }}">
                 <button onClick="{{ p2.onOpen }}" style="display:flex;flex-direction:column;align-items:center;gap:7px;background:transparent;border:none;cursor:pointer;color:#F3F5EC;width:112px;">
-                  <div style="width:56px;height:56px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:23px;color:#0C0D0A;background:{{ p2.color }};border:3px solid #C0C7CF;">{{ p2.initials }}</div>
+                  <div style="width:56px;height:56px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:23px;color:#0C0D0A;background:{{ p2.color }};border:3px solid #C0C7CF;">{{ p2.avatarNode }}</div>
                   <div style="font-weight:700;font-size:13px;text-align:center;line-height:1.1;">{{ p2.name }}</div>
                   <div style="font-family:Barlow Condensed;font-weight:800;font-size:20px;color:#C7F536;">{{ p2.score }}</div>
                   <div style="width:100%;height:96px;border-radius:14px 14px 0 0;background:linear-gradient(#C0C7CF,#7f8790);display:flex;align-items:flex-start;justify-content:center;padding-top:8px;font-family:Barlow Condensed;font-weight:800;font-size:34px;color:#0C0D0A;">2</div>
@@ -253,7 +276,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
               <sc-if value="{{ p1 }}" hint-placeholder-val="{{ false }}">
                 <button onClick="{{ p1.onOpen }}" style="display:flex;flex-direction:column;align-items:center;gap:7px;background:transparent;border:none;cursor:pointer;color:#F3F5EC;width:124px;">
                   <div style="font-size:22px;line-height:1;">👑</div>
-                  <div style="width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:26px;color:#0C0D0A;background:{{ p1.color }};border:3px solid #FFD23F;">{{ p1.initials }}</div>
+                  <div style="width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:26px;color:#0C0D0A;background:{{ p1.color }};border:3px solid #FFD23F;">{{ p1.avatarNode }}</div>
                   <div style="font-weight:700;font-size:14px;text-align:center;line-height:1.1;">{{ p1.name }}</div>
                   <div style="font-family:Barlow Condensed;font-weight:800;font-size:23px;color:#C7F536;">{{ p1.score }}</div>
                   <div style="width:100%;height:128px;border-radius:14px 14px 0 0;background:linear-gradient(#FFD23F,#c99e13);display:flex;align-items:flex-start;justify-content:center;padding-top:9px;font-family:Barlow Condensed;font-weight:800;font-size:42px;color:#0C0D0A;">1</div>
@@ -261,7 +284,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
               </sc-if>
               <sc-if value="{{ p3 }}" hint-placeholder-val="{{ false }}">
                 <button onClick="{{ p3.onOpen }}" style="display:flex;flex-direction:column;align-items:center;gap:7px;background:transparent;border:none;cursor:pointer;color:#F3F5EC;width:112px;">
-                  <div style="width:56px;height:56px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:23px;color:#0C0D0A;background:{{ p3.color }};border:3px solid #E08A4B;">{{ p3.initials }}</div>
+                  <div style="width:56px;height:56px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:23px;color:#0C0D0A;background:{{ p3.color }};border:3px solid #E08A4B;">{{ p3.avatarNode }}</div>
                   <div style="font-weight:700;font-size:13px;text-align:center;line-height:1.1;">{{ p3.name }}</div>
                   <div style="font-family:Barlow Condensed;font-weight:800;font-size:20px;color:#C7F536;">{{ p3.score }}</div>
                   <div style="width:100%;height:76px;border-radius:14px 14px 0 0;background:linear-gradient(#E08A4B,#a25f2c);display:flex;align-items:flex-start;justify-content:center;padding-top:7px;font-family:Barlow Condensed;font-weight:800;font-size:30px;color:#0C0D0A;">3</div>
@@ -274,7 +297,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
                 <sc-for list="{{ boardRest }}" as="r" hint-placeholder-count="4">
                   <button onClick="{{ r.onOpen }}" style="{{ r.rowStyle }}">
                     <div style="width:26px;text-align:center;font-family:Barlow Condensed;font-weight:800;font-size:19px;color:#9DA391;">{{ r.rank }}</div>
-                    <div style="width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:16px;color:#0C0D0A;background:{{ r.color }};flex-shrink:0;">{{ r.initials }}</div>
+                    <div style="width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:16px;color:#0C0D0A;background:{{ r.color }};flex-shrink:0;">{{ r.avatarNode }}</div>
                     <div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:15px;">{{ r.name }}</div><div style="color:#9DA391;font-size:12px;">🔥 {{ r.streak }} · {{ r.minutes }} min · {{ r.sessions }} sessions</div></div>
                     <div style="font-family:Barlow Condensed;font-weight:800;font-size:22px;color:#C7F536;">{{ r.score }}</div>
                   </button>
@@ -295,7 +318,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
             <button onClick="{{ goBoard }}" style="align-self:flex-start;background:transparent;border:none;color:#9DA391;cursor:pointer;font-size:14px;padding:4px 0;" style-hover="color:#C7F536;">← Leaderboard</button>
 
             <div style="background:linear-gradient(120deg,#1c2013,#15170F);border:1px solid rgba(255,255,255,.08);border-radius:22px;padding:24px;display:flex;gap:18px;align-items:center;flex-wrap:wrap;">
-              <div style="width:72px;height:72px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:30px;color:#0C0D0A;background:{{ pView.color }};flex-shrink:0;">{{ pView.initials }}</div>
+              <div style="width:72px;height:72px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:30px;color:#0C0D0A;background:{{ pView.color }};flex-shrink:0;">{{ pView.avatarNode }}</div>
               <div style="flex:1;min-width:180px;">
                 <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
                   <span style="font-family:Barlow Condensed;font-weight:800;font-size:32px;text-transform:uppercase;letter-spacing:.02em;line-height:1;">{{ pView.name }}</span>
@@ -356,6 +379,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
                         <sc-for list="{{ g.items }}" as="it" hint-placeholder-count="2">
                           <div style="display:flex;align-items:center;gap:12px;">
                             <div style="width:7px;height:7px;border-radius:50%;background:#4DD4FF;flex-shrink:0;"></div>
+                            {{ it.photoThumb }}
                             <div style="flex:1;font-size:14px;">{{ it.type }}</div>
                             <div style="font-family:Barlow Condensed;font-weight:700;font-size:16px;">{{ it.minutes }}<span style="font-size:11px;color:#9DA391;"> min</span></div>
                             <sc-if value="{{ pIsMe }}" hint-placeholder-val="{{ false }}"><button onClick="{{ it.onDelete }}" style="width:24px;height:24px;border-radius:7px;border:none;background:transparent;color:#6b7061;cursor:pointer;font-size:13px;" style-hover="background:rgba(255,106,61,.15);color:#FF6A3D;">✕</button></sc-if>
@@ -387,13 +411,27 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
 class Component extends DCLogic {
   KEY = 'pulse.flb.v1';
   API_BASE = 'https://ledgerbal.com/api/pulse';
+  PIN_CODE = '0535';
+  PIN_KEY = 'pulse.pin.until';
+  PIN_DAYS = 15;
   state = {
     ready: false, users: [], entries: [], meId: null,
     view: 'onboarding', tab: 'home', profileId: null, monthKey: null,
     form: { date: '', minutes: '', type: 'Running', customType: '', adding: false },
     nameInput: '', goalInput: 150,
+    avatarFile: null, avatarPreview: null,
+    entryPhotoFile: null, entryPhotoPreview: null,
     typeOptions: ['Running', 'Cycling', 'Gym / Weights', 'Yoga', 'Swimming', 'Walking', 'HIIT', 'Sports'],
     toast: null,
+    pinInput: '',
+    // Computed synchronously (before first paint) so a locked visitor never
+    // flashes real content before the PIN screen mounts.
+    locked: (() => {
+      try {
+        const until = Number(localStorage.getItem('pulse.pin.until') || 0);
+        return !(until && Date.now() < until);
+      } catch (e) { return true; }
+    })(),
   };
 
   componentDidMount() {
@@ -415,11 +453,12 @@ class Component extends DCLogic {
   async api(path, options = {}, timeoutMs = 5000) {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), timeoutMs);
+    const isForm = typeof FormData !== 'undefined' && options.body instanceof FormData;
     try {
       const res = await fetch(this.API_BASE + path, {
-        headers: { 'Content-Type': 'application/json' },
-        signal: ctrl.signal,
         ...options,
+        headers: isForm ? {} : { 'Content-Type': 'application/json' },
+        signal: ctrl.signal,
       });
       if (!res.ok) throw new Error('Pulse API ' + res.status + ' on ' + path);
       return res.status === 204 ? null : res.json();
@@ -437,8 +476,8 @@ class Component extends DCLogic {
         this.api('/users/?limit=500'),
         this.api('/entries/?limit=2000'),
       ]);
-      const users = (usersResp.results || []).map(u => ({ id: u.id, name: u.name, goal: u.goal, createdAt: u.created_at }));
-      const entries = (entriesResp.results || []).map(e => ({ id: e.id, userId: e.user, date: e.date, minutes: e.minutes, type: e.type, createdAt: e.created_at }));
+      const users = (usersResp.results || []).map(u => ({ id: u.id, name: u.name, goal: u.goal, avatar: u.avatar || null, createdAt: u.created_at }));
+      const entries = (entriesResp.results || []).map(e => ({ id: e.id, userId: e.user, date: e.date, minutes: e.minutes, type: e.type, photo: e.photo || null, createdAt: e.created_at }));
       try { localStorage.setItem(this.KEY + '.cache', JSON.stringify({ users, entries, syncedAt: Date.now() })); } catch (e) {}
       const valid = meId && users.some(u => u.id === meId);
       this.setState({
@@ -525,6 +564,27 @@ class Component extends DCLogic {
   // ---- handlers ----
   onName = (e) => this.setState({ nameInput: e.target.value });
   onGoal = (e) => this.setState({ goalInput: e.target.value });
+  onAvatarPick = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    this.setState({ avatarFile: file, avatarPreview: URL.createObjectURL(file) });
+  };
+  onEntryPhotoPick = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    this.setState({ entryPhotoFile: file, entryPhotoPreview: URL.createObjectURL(file) });
+  };
+  onPinInput = (e) => this.setState({ pinInput: e.target.value.replace(/\D/g, '').slice(0, 4) });
+  onPinKeyDown = (e) => { if (e.key === 'Enter') this.submitPin(); };
+  submitPin = () => {
+    if (this.state.pinInput === this.PIN_CODE) {
+      try { localStorage.setItem(this.PIN_KEY, String(Date.now() + this.PIN_DAYS * 24 * 60 * 60 * 1000)); } catch (e) {}
+      this.setState({ locked: false, pinInput: '' });
+    } else {
+      this.toast('Wrong PIN');
+      this.setState({ pinInput: '' });
+    }
+  };
   setTab = (t) => this.setState({ tab: t });
   goLog = () => this.setState({ tab: 'log' });
   goBoard = () => this.setState({ tab: 'board' });
@@ -539,11 +599,16 @@ class Component extends DCLogic {
     const name = (this.state.nameInput || '').trim();
     if (!name) { this.toast('Enter your name'); return; }
     const goal = Math.max(30, Number(this.state.goalInput) || 150);
-    this.api('/users/', { method: 'POST', body: JSON.stringify({ name, goal }) })
+    const fd = new FormData();
+    fd.append('name', name);
+    fd.append('goal', String(goal));
+    if (this.state.avatarFile) fd.append('avatar', this.state.avatarFile);
+    this.api('/users/', { method: 'POST', body: fd })
       .then(u => {
-        const user = { id: u.id, name: u.name, goal: u.goal, createdAt: u.created_at };
+        const user = { id: u.id, name: u.name, goal: u.goal, avatar: u.avatar || null, createdAt: u.created_at };
         this.update({ users: [...this.state.users, user],
-          meId: user.id, view: 'app', tab: 'home', profileId: user.id, nameInput: '' });
+          meId: user.id, view: 'app', tab: 'home', profileId: user.id, nameInput: '',
+          avatarFile: null, avatarPreview: null });
         this.toast('Welcome, ' + name.split(' ')[0] + '!');
       })
       .catch(() => this.toast('Could not create profile'));
@@ -563,11 +628,17 @@ class Component extends DCLogic {
     const f = this.state.form; const min = Number(f.minutes);
     if (!min || min <= 0) { this.toast('Enter minutes'); return; }
     if (!f.type) { this.toast('Pick a type'); return; }
-    const payload = { user: this.state.meId, date: f.date || this.today, minutes: min, type: f.type };
-    this.api('/entries/', { method: 'POST', body: JSON.stringify(payload) })
+    const fd = new FormData();
+    fd.append('user', this.state.meId);
+    fd.append('date', f.date || this.today);
+    fd.append('minutes', String(min));
+    fd.append('type', f.type);
+    if (this.state.entryPhotoFile) fd.append('photo', this.state.entryPhotoFile);
+    this.api('/entries/', { method: 'POST', body: fd })
       .then(e => {
-        const entry = { id: e.id, userId: e.user, date: e.date, minutes: e.minutes, type: e.type, createdAt: e.created_at };
-        this.setState({ entries: [...this.state.entries, entry], form: { ...f, minutes: '' } });
+        const entry = { id: e.id, userId: e.user, date: e.date, minutes: e.minutes, type: e.type, photo: e.photo || null, createdAt: e.created_at };
+        this.setState({ entries: [...this.state.entries, entry], form: { ...f, minutes: '' },
+          entryPhotoFile: null, entryPhotoPreview: null });
         this.toast('Logged ' + min + ' min!');
       })
       .catch(() => this.toast('Could not save workout'));
@@ -597,12 +668,28 @@ class Component extends DCLogic {
 
   renderVals() {
     const S = this.state;
-    if (!S.ready) return { notReady: true, showOnboarding: false, showApp: false, hasUsers: false,
+    if (S.locked) {
+      return {
+        locked: true, notReady: false, showOnboarding: false, showApp: false, hasUsers: false,
+        pinInput: S.pinInput, onPinInput: this.onPinInput, onPinKeyDown: this.onPinKeyDown, submitPin: this.submitPin,
+        toast: S.toast,
+        existingUsers: [], nameInput: '', goalInput: 150, navTabs: [], statCards: [], meBars: [],
+        recent: [], typeChips: [], minChips: [], todayEntries: [], boardRest: [], calCells: [], calBlanks: [], groupedDays: [], pStats: [],
+      };
+    }
+    if (!S.ready) return { locked: false, notReady: true, showOnboarding: false, showApp: false, hasUsers: false,
       existingUsers: [], nameInput: '', goalInput: 150, toast: null, navTabs: [], statCards: [], meBars: [],
       recent: [], typeChips: [], minChips: [], todayEntries: [], boardRest: [], calCells: [], calBlanks: [], groupedDays: [], pStats: [] };
 
     const now = new Date(); const nowMK = this.monthKeyOf(now); const mk = S.monthKey || nowMK;
-    const uv = (u) => ({ id: u.id, name: u.name, initials: this.initials(u.name), color: this.color(u.name) });
+    const uv = (u) => {
+      const initials = this.initials(u.name);
+      return {
+        id: u.id, name: u.name, initials, color: this.color(u.name),
+        avatar: u.avatar || null,
+        avatarNode: u.avatar ? React.createElement('img', { src: u.avatar, style: { width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' } }) : initials,
+      };
+    };
 
     const rows = S.users.map(u => { const b = this.scoreBreakdown(u.id, mk);
       return { ...uv(u), score: b.total, minutes: b.minutes, sessions: b.sessions, streak: this.currentStreak(u.id) }; })
@@ -647,8 +734,9 @@ class Component extends DCLogic {
       return arr;
     };
 
+    const photoThumb = (url) => url ? React.createElement('img', { src: url, style: { width: '28px', height: '28px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0 } }) : null;
     const recent = myAll.slice().sort((a, b) => a.date < b.date ? 1 : a.date > b.date ? -1 : b.createdAt - a.createdAt)
-      .slice(0, 6).map(e => ({ type: e.type, minutes: e.minutes, dateLabel: this.dLabel(e.date) }));
+      .slice(0, 6).map(e => ({ type: e.type, minutes: e.minutes, dateLabel: this.dLabel(e.date), photoThumb: photoThumb(e.photo) }));
 
     const chipBase = 'padding:9px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.1);cursor:pointer;font-size:14px;font-weight:600;transition:.12s;';
     const typeChips = S.typeOptions.map(t => ({ label: t, onClick: () => this.setForm({ type: t }),
@@ -656,7 +744,7 @@ class Component extends DCLogic {
     const minChips = [15, 30, 45, 60].map(m => ({ label: m + 'm', onClick: () => this.setForm({ minutes: String(m) }) }));
 
     const todayList = myAll.filter(e => e.date === this.today).sort((a, b) => b.createdAt - a.createdAt)
-      .map(e => ({ type: e.type, minutes: e.minutes, id: e.id, onDelete: () => this.deleteEntry(e.id) }));
+      .map(e => ({ type: e.type, minutes: e.minutes, id: e.id, onDelete: () => this.deleteEntry(e.id), photoThumb: photoThumb(e.photo) }));
     const todayTotal = todayList.reduce((s, e) => s + e.minutes, 0);
 
     // profile
@@ -694,7 +782,7 @@ class Component extends DCLogic {
     const gmap = {}; const order = [];
     pEntries.forEach(e => {
       if (!gmap[e.date]) { gmap[e.date] = { date: e.date, dateLabel: this.dLabel(e.date), items: [], total: 0 }; order.push(e.date); }
-      gmap[e.date].items.push({ type: e.type, minutes: e.minutes, id: e.id, onDelete: () => this.deleteEntry(e.id) });
+      gmap[e.date].items.push({ type: e.type, minutes: e.minutes, id: e.id, onDelete: () => this.deleteEntry(e.id), photoThumb: photoThumb(e.photo) });
       gmap[e.date].total += e.minutes;
     });
     const groupedDays = order.map(d => gmap[d]);
@@ -708,6 +796,7 @@ class Component extends DCLogic {
       .sort((a, b) => b.score - a.score);
 
     return {
+      locked: false,
       notReady: false,
       showOnboarding: S.view === 'onboarding',
       showApp: S.view === 'app' && !!meUser,
@@ -716,7 +805,12 @@ class Component extends DCLogic {
       nameInput: S.nameInput, goalInput: S.goalInput, toast: S.toast,
       openMe: this.openMe, goLog: this.goLog, switchUser: this.switchUser, goBoard: this.goBoard,
       createUser: this.createUser, onName: this.onName, onGoal: this.onGoal,
+      onAvatarPick: this.onAvatarPick,
+      avatarPreviewNode: S.avatarPreview ? React.createElement('img', { src: S.avatarPreview, style: { width: '100%', height: '100%', objectFit: 'cover' } }) : '📷',
       onDate: this.onDate, onMinutes: this.onMinutes, onCustom: this.onCustom,
+      onEntryPhotoPick: this.onEntryPhotoPick,
+      entryPhotoNode: S.entryPhotoPreview ? React.createElement('img', { src: S.entryPhotoPreview, style: { width: '100%', height: '100%', objectFit: 'cover' } }) : '📷',
+      entryPhotoLabel: S.entryPhotoFile ? 'Change photo' : 'Add photo',
       toggleCustom: this.toggleCustom, addType: this.addType, addEntry: this.addEntry,
       saveGoal: this.saveGoal, prevMonth: this.prevMonth, nextMonth: this.nextMonth,
       me, meScore: meB.total, greeting, heroStatus, monthLabel: this.monthLabel(mk),
