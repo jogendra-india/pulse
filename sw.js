@@ -1,8 +1,8 @@
-// App-shell cache: makes the page itself load instantly (and work fully
-// offline, not just "API down") by serving index.html/support.js/React from
-// cache first. Bump CACHE whenever index.html or support.js changes, or
-// returning visitors keep the stale shell until it falls out of cache.
-const CACHE = 'pulse-shell-v2';
+// App-shell cache: stale-while-revalidate. Every load is served from cache
+// instantly, while a background fetch refreshes that cache for next time —
+// so a new deploy shows up on the following visit automatically, with no
+// manual cache-version bump required.
+const CACHE = 'pulse-shell';
 
 const SHELL_ABS = ['./', './index.html', './support.js']
   .map((p) => new URL(p, self.location).href)
@@ -13,18 +13,12 @@ const SHELL_ABS = ['./', './index.html', './support.js']
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE)
-      .then((cache) => cache.addAll(SHELL_ABS))
-      .then(() => self.skipWaiting())
+    caches.open(CACHE).then((cache) => cache.addAll(SHELL_ABS)).then(() => self.skipWaiting())
   );
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
-      .then(() => self.clients.claim())
-  );
+  event.waitUntil(self.clients.claim());
 });
 
 self.addEventListener('fetch', (event) => {
@@ -35,15 +29,16 @@ self.addEventListener('fetch', (event) => {
   if (!isShellAsset) return; // API calls etc. — untouched, handled by the app's own online/offline logic
 
   event.respondWith(
-    caches.match(req).then((cached) => {
-      if (cached) return cached;
-      return fetch(req).then((res) => {
-        if (res && res.ok) {
-          const copy = res.clone();
-          caches.open(CACHE).then((cache) => cache.put(req, copy));
-        }
-        return res;
-      });
-    })
+    caches.open(CACHE).then((cache) =>
+      cache.match(req).then((cached) => {
+        const network = fetch(req)
+          .then((res) => {
+            if (res && res.ok) cache.put(req, res.clone());
+            return res;
+          })
+          .catch(() => cached);
+        return cached || network;
+      })
+    )
   );
 });
