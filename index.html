@@ -34,15 +34,6 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
 
 <div style="min-height:100vh;background:radial-gradient(1200px 620px at 72% -12%, #17190f 0%, #0C0D0A 55%);color:#F3F5EC;font-family:Archivo,system-ui,-apple-system,sans-serif;">
 
-  <sc-if value="{{ locked }}" hint-placeholder-val="{{ false }}">
-    <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;gap:22px;">
-      <div style="font-family:Barlow Condensed;font-weight:800;font-size:50px;letter-spacing:.04em;">PULSE<span style="color:#C7F536;">.</span></div>
-      <div style="color:#9DA391;font-size:13px;letter-spacing:.14em;text-transform:uppercase;">Enter PIN to continue</div>
-      <input type="password" inputmode="numeric" maxlength="4" value="{{ pinInput }}" onInput="{{ onPinInput }}" onKeyDown="{{ onPinKeyDown }}" placeholder="••••" style="width:180px;text-align:center;letter-spacing:.5em;font-size:26px;padding:14px;border-radius:14px;border:1px solid rgba(255,255,255,.12);background:#15170F;color:#F3F5EC;outline:none;" />
-      <button onClick="{{ submitPin }}" style="padding:14px 32px;border-radius:12px;border:none;background:#C7F536;color:#0C0D0A;font-family:Barlow Condensed;font-weight:800;font-size:18px;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;">Unlock →</button>
-    </div>
-  </sc-if>
-
   <sc-if value="{{ notReady }}" hint-placeholder-val="{{ true }}">
     <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;">
       <div style="font-family:Barlow Condensed;font-weight:800;font-size:60px;letter-spacing:.04em;">PULSE<span style="color:#C7F536;">.</span></div>
@@ -62,7 +53,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
           <div style="display:flex;flex-direction:column;gap:10px;">
             <div style="font-family:Barlow Condensed;font-weight:700;font-size:19px;text-transform:uppercase;letter-spacing:.08em;color:#9DA391;">Jump back in</div>
             <sc-for list="{{ existingUsers }}" as="u" hint-placeholder-count="3">
-              <button onClick="{{ u.onPick }}" style="display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.08);background:#15170F;cursor:pointer;text-align:left;color:#F3F5EC;transition:.15s;" style-hover="border-color:#C7F536;background:#1b1e13;">
+              <button onClick="{{ u.onSelectLogin }}" style="display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.08);background:#15170F;cursor:pointer;text-align:left;color:#F3F5EC;transition:.15s;" style-hover="border-color:#C7F536;background:#1b1e13;">
                 <div style="width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:20px;color:#0C0D0A;background:{{ u.color }};">{{ u.avatarNode }}</div>
                 <div style="flex:1;min-width:0;">
                   <div style="font-weight:700;font-size:16px;">{{ u.name }}</div>
@@ -77,6 +68,20 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
           </div>
         </sc-if>
 
+        <sc-if value="{{ loginTargetOpen }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#15170F;border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:22px;display:flex;flex-direction:column;gap:14px;">
+            <div style="font-family:Barlow Condensed;font-weight:700;font-size:22px;text-transform:uppercase;letter-spacing:.06em;">Log in as {{ loginTargetName }}</div>
+            <div>
+              <label style="display:block;color:#9DA391;font-size:11px;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px;">Password</label>
+              <input type="password" value="{{ loginPassword }}" onInput="{{ onLoginPassword }}" onKeyDown="{{ onLoginKeyDown }}" placeholder="Password" style="width:100%;padding:13px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:#0C0D0A;color:#F3F5EC;font-size:16px;outline:none;" autofocus />
+              <div style="color:#6b7061;font-size:12px;margin-top:8px;">Tip: unless you've changed it, your password is your first name.</div>
+            </div>
+            <button onClick="{{ submitLogin }}" style="margin-top:4px;padding:14px;border-radius:12px;border:none;background:#C7F536;color:#0C0D0A;font-family:Barlow Condensed;font-weight:800;font-size:20px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;" style-hover="background:#d4ff4d;">Log in →</button>
+            <button onClick="{{ cancelLogin }}" style="background:transparent;border:none;color:#9DA391;cursor:pointer;font-size:14px;padding:4px 0;" style-hover="color:#F3F5EC;">← Back</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ !loginTargetOpen }}" hint-placeholder-val="{{ true }}">
         <div style="background:#15170F;border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:22px;display:flex;flex-direction:column;gap:14px;">
           <div style="font-family:Barlow Condensed;font-weight:700;font-size:22px;text-transform:uppercase;letter-spacing:.06em;">Create your profile</div>
           <div style="display:flex;align-items:center;gap:14px;">
@@ -93,6 +98,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
           </div>
           <button onClick="{{ createUser }}" style="margin-top:4px;padding:14px;border-radius:12px;border:none;background:#C7F536;color:#0C0D0A;font-family:Barlow Condensed;font-weight:800;font-size:20px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;" style-hover="background:#d4ff4d;">Start training →</button>
         </div>
+        </sc-if>
       </div>
     </div>
   </sc-if>
@@ -110,10 +116,9 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
           </div>
           <div style="flex:1;"></div>
           <div style="display:flex;align-items:center;gap:10px;padding:6px 12px 6px 6px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:#15170F;color:#F3F5EC;">
-            <label title="Change profile photo" style="width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:16px;color:#0C0D0A;background:{{ me.color }};cursor:pointer;overflow:hidden;flex-shrink:0;">
+            <div onClick="{{ me.onEnlarge }}" title="View profile photo" style="width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:16px;color:#0C0D0A;background:{{ me.color }};cursor:pointer;overflow:hidden;flex-shrink:0;">
               {{ me.avatarNode }}
-              <input type="file" accept="image/*" onChange="{{ onAvatarAdjustPick }}" style="display:none;" />
-            </label>
+            </div>
             <button onClick="{{ openMe }}" style="text-align:left;line-height:1.1;background:transparent;border:none;cursor:pointer;color:inherit;padding:0;font:inherit;">
               <div style="font-weight:700;font-size:14px;">{{ me.name }}</div>
               <div style="color:#C7F536;font-size:12px;font-family:Barlow Condensed;font-weight:700;letter-spacing:.04em;">{{ meScore }} PTS</div>
@@ -371,19 +376,15 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
 
             <sc-if value="{{ pIsMe }}" hint-placeholder-val="{{ false }}">
               <div style="background:#15170F;border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:16px 18px;display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
-                <div style="display:flex;align-items:center;gap:14px;">
-                  <div style="width:48px;height:48px;border-radius:14px;overflow:hidden;flex-shrink:0;background:#0C0D0A;display:flex;align-items:center;justify-content:center;font-size:20px;">{{ profileAvatarPreviewNode }}</div>
-                  <div>
-                    <div style="font-family:Barlow Condensed;font-weight:700;font-size:16px;text-transform:uppercase;letter-spacing:.06em;">Profile photo</div>
-                    <label style="cursor:pointer;color:#C7F536;font-size:13px;font-weight:700;">Choose photo<input type="file" accept="image/*" onChange="{{ onAvatarAdjustPick }}" style="display:none;" /></label>
-                  </div>
-                </div>
-              </div>
-            </sc-if>
-            <sc-if value="{{ pIsMe }}" hint-placeholder-val="{{ false }}">
-              <div style="background:#15170F;border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:16px 18px;display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
                 <div><div style="font-family:Barlow Condensed;font-weight:700;font-size:16px;text-transform:uppercase;letter-spacing:.06em;">Weekly goal</div><div style="color:#9DA391;font-size:13px;">Currently {{ pGoal }} min / week</div></div>
                 <div style="display:flex;gap:8px;"><input type="number" value="{{ goalInput }}" onInput="{{ onGoal }}" style="width:110px;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:#0C0D0A;color:#F3F5EC;font-size:15px;outline:none;" /><button onClick="{{ saveGoal }}" style="padding:0 18px;border-radius:10px;border:1px solid #C7F536;background:transparent;color:#C7F536;font-weight:700;cursor:pointer;">Update</button></div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ pIsMe }}" hint-placeholder-val="{{ false }}">
+              <div style="background:#15170F;border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:16px 18px;display:flex;gap:14px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
+                <div><div style="font-family:Barlow Condensed;font-weight:700;font-size:16px;text-transform:uppercase;letter-spacing:.06em;">Password</div><div style="color:#9DA391;font-size:13px;">Change it anytime — no one else can see or set it for you.</div></div>
+                <div style="display:flex;gap:8px;"><input type="password" value="{{ newPasswordInput }}" onInput="{{ onNewPasswordInput }}" placeholder="New password" style="width:150px;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:#0C0D0A;color:#F3F5EC;font-size:15px;outline:none;" /><button onClick="{{ saveNewPassword }}" style="padding:0 18px;border-radius:10px;border:1px solid #C7F536;background:transparent;color:#C7F536;font-weight:700;cursor:pointer;">Update</button></div>
               </div>
             </sc-if>
 
@@ -479,6 +480,19 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
     </div>
   </sc-if>
 
+  <sc-if value="{{ avatarViewerOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;background:rgba(12,13,10,.8);backdrop-filter:blur(4px);z-index:66;display:flex;align-items:center;justify-content:center;padding:20px;" onClick="{{ closeAvatarViewer }}">
+      <div style="background:#15170F;border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:24px;max-width:300px;width:100%;display:flex;flex-direction:column;align-items:center;gap:16px;animation:flbpop .2s ease;" onClick="{{ stopClickBubble }}">
+        <div style="font-family:Barlow Condensed;font-weight:800;font-size:20px;text-transform:uppercase;letter-spacing:.04em;">{{ avatarViewerName }}</div>
+        <div style="width:220px;height:220px;border-radius:28px;overflow:hidden;background:#0C0D0A;">{{ avatarViewerImage }}</div>
+        <sc-if value="{{ avatarViewerIsMe }}" hint-placeholder-val="{{ false }}">
+          <label style="cursor:pointer;padding:12px 22px;border-radius:10px;border:1px solid #C7F536;color:#C7F536;font-weight:700;font-size:14px;">{{ avatarViewerActionLabel }}<input type="file" accept="image/*" onChange="{{ onAvatarAdjustPick }}" style="display:none;" /></label>
+        </sc-if>
+        <button onClick="{{ closeAvatarViewer }}" style="background:transparent;border:none;color:#9DA391;cursor:pointer;font-size:14px;padding:2px 0;" style-hover="color:#F3F5EC;">Close</button>
+      </div>
+    </div>
+  </sc-if>
+
   <sc-if value="{{ avatarAdjustOpen }}" hint-placeholder-val="{{ false }}">
     <div style="position:fixed;inset:0;background:rgba(12,13,10,.8);backdrop-filter:blur(4px);z-index:68;display:flex;align-items:center;justify-content:center;padding:20px;">
       <div style="background:#15170F;border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:22px;max-width:320px;width:100%;display:flex;flex-direction:column;gap:16px;animation:flbpop .2s ease;">
@@ -527,9 +541,6 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
 class Component extends DCLogic {
   KEY = 'pulse.flb.v1';
   API_BASE = 'https://ledgerbal.com/api/pulse';
-  PIN_CODE = '0535';
-  PIN_KEY = 'pulse.pin.until';
-  PIN_DAYS = 15;
   state = {
     ready: false, users: [], entries: [], meId: null,
     view: 'onboarding', tab: 'home', profileId: null, monthKey: null,
@@ -540,20 +551,15 @@ class Component extends DCLogic {
     entryPhotoFile: null, entryPhotoPreview: null,
     editingEntryId: null,
     confirmDeleteId: null,
+    authToken: null,
+    loginTargetId: null, loginPassword: '',
+    avatarViewerUserId: null,
+    newPasswordInput: '',
     savingEntry: false,
     detailEntryId: null,
     photoLightboxUrl: null,
     typeOptions: ['Running', 'Cycling', 'Gym / Weights', 'Yoga', 'Swimming', 'Walking', 'HIIT', 'Sports'],
     toast: null,
-    pinInput: '',
-    // Computed synchronously (before first paint) so a locked visitor never
-    // flashes real content before the PIN screen mounts.
-    locked: (() => {
-      try {
-        const until = Number(localStorage.getItem('pulse.pin.until') || 0);
-        return !(until && Date.now() < until);
-      } catch (e) { return true; }
-    })(),
   };
 
   componentDidMount() {
@@ -562,6 +568,7 @@ class Component extends DCLogic {
     let saved = null;
     try { saved = JSON.parse(localStorage.getItem(this.KEY) || 'null'); } catch (e) {}
     const meId = (saved && saved.meId) || null;
+    const authToken = (saved && saved.authToken) || null;
     const typeOptions = (saved && saved.typeOptions) || this.state.typeOptions;
     this.setState({
       typeOptions,
@@ -569,30 +576,40 @@ class Component extends DCLogic {
       goalInput: defGoal,
       form: { ...this.state.form, date: this.today, time: this.nowTimeStr() },
     });
-    this.loadAll(meId);
+    this.loadAll(meId, authToken);
   }
 
   async api(path, options = {}, timeoutMs = 5000) {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), timeoutMs);
     const isForm = typeof FormData !== 'undefined' && options.body instanceof FormData;
+    const headers = isForm ? {} : { 'Content-Type': 'application/json' };
+    const hadToken = !!this.state.authToken;
+    if (hadToken) headers['Authorization'] = 'Token ' + this.state.authToken;
     try {
       const res = await fetch(this.API_BASE + path, {
         ...options,
-        headers: isForm ? {} : { 'Content-Type': 'application/json' },
+        headers,
         signal: ctrl.signal,
       });
+      if (res.status === 401 && hadToken) {
+        this.forceLogout('Your session expired — please log in again.');
+      }
       if (!res.ok) throw new Error('Pulse API ' + res.status + ' on ' + path);
       return res.status === 204 ? null : res.json();
     } finally {
       clearTimeout(t);
     }
   }
+  forceLogout = (message) => {
+    this.setState({ meId: null, authToken: null, view: 'onboarding', profileId: null }, () => this.save());
+    if (message) this.toast(message);
+  };
 
   // Backend-down fallback: reuse the last successful fetch (cached separately
   // from the small meId/typeOptions blob so a stale-data read never clobbers
   // "who am I on this device") instead of dumping the athlete back to onboarding.
-  async loadAll(meId) {
+  async loadAll(meId, authToken) {
     try {
       const [usersResp, entriesResp] = await Promise.all([
         this.api('/users/?limit=500'),
@@ -601,10 +618,11 @@ class Component extends DCLogic {
       const users = (usersResp.results || []).map(u => ({ id: u.id, name: u.name, goal: u.goal, avatar: u.avatar || null, avatarFocalX: u.avatar_focal_x ?? 50, avatarFocalY: u.avatar_focal_y ?? 50, avatarZoom: u.avatar_zoom ?? 100, createdAt: u.created_at }));
       const entries = (entriesResp.results || []).map(e => ({ id: e.id, userId: e.user, date: e.date, minutes: e.minutes, type: e.type, notes: e.notes || '', photo: e.photo || null, startTime: e.start_time || null, createdAt: e.created_at }));
       try { localStorage.setItem(this.KEY + '.cache', JSON.stringify({ users, entries, syncedAt: Date.now() })); } catch (e) {}
-      const valid = meId && users.some(u => u.id === meId);
+      const valid = meId && authToken && users.some(u => u.id === meId);
       this.setState({
         ready: true, users, entries, offline: false,
         meId: valid ? meId : null,
+        authToken: valid ? authToken : null,
         view: valid ? 'app' : 'onboarding',
         profileId: valid ? meId : null,
       });
@@ -613,10 +631,11 @@ class Component extends DCLogic {
       try { cached = JSON.parse(localStorage.getItem(this.KEY + '.cache') || 'null'); } catch (err) {}
       const users = (cached && cached.users) || [];
       const entries = (cached && cached.entries) || [];
-      const valid = meId && users.some(u => u.id === meId);
+      const valid = meId && authToken && users.some(u => u.id === meId);
       this.setState({
         ready: true, users, entries, offline: true,
         meId: valid ? meId : null,
+        authToken: valid ? authToken : null,
         view: valid ? 'app' : 'onboarding',
         profileId: valid ? meId : null,
       });
@@ -625,8 +644,8 @@ class Component extends DCLogic {
   }
 
   save() {
-    const { meId, typeOptions } = this.state;
-    try { localStorage.setItem(this.KEY, JSON.stringify({ meId, typeOptions })); } catch (e) {}
+    const { meId, authToken, typeOptions } = this.state;
+    try { localStorage.setItem(this.KEY, JSON.stringify({ meId, authToken, typeOptions })); } catch (e) {}
   }
   update(patch) { this.setState(patch, () => this.save()); }
 
@@ -703,8 +722,20 @@ class Component extends DCLogic {
     if (!file || !this.state.meId) return;
     this.setState({
       avatarFile: file, avatarPreview: URL.createObjectURL(file),
-      avatarFocalX: 50, avatarFocalY: 50, avatarZoom: 100, avatarAdjustOpen: true,
+      avatarFocalX: 50, avatarFocalY: 50, avatarZoom: 100,
+      avatarAdjustOpen: true, avatarViewerUserId: null,
     });
+  };
+  onNewPasswordInput = (e) => this.setState({ newPasswordInput: e.target.value });
+  saveNewPassword = () => {
+    const pw = (this.state.newPasswordInput || '').trim();
+    if (!pw) { this.toast('Enter a new password'); return; }
+    this.api('/users/' + this.state.meId + '/change-password/', { method: 'POST', body: JSON.stringify({ new_password: pw }) })
+      .then(res => {
+        this.setState({ authToken: res.token, newPasswordInput: '' }, () => this.save());
+        this.toast('Password updated');
+      })
+      .catch(() => this.toast('Could not update password'));
   };
   setAvatarFocal = (x, y) => this.setState({ avatarFocalX: x, avatarFocalY: y });
   onAvatarZoom = (e) => this.setState({ avatarZoom: Number(e.target.value) });
@@ -738,21 +769,29 @@ class Component extends DCLogic {
     if (!file) return;
     this.setState({ entryPhotoFile: file, entryPhotoPreview: URL.createObjectURL(file) });
   };
-  onPinInput = (e) => this.setState({ pinInput: e.target.value.replace(/\D/g, '').slice(0, 4) });
-  onPinKeyDown = (e) => { if (e.key === 'Enter') this.submitPin(); };
-  submitPin = () => {
-    if (this.state.pinInput === this.PIN_CODE) {
-      try { localStorage.setItem(this.PIN_KEY, String(Date.now() + this.PIN_DAYS * 24 * 60 * 60 * 1000)); } catch (e) {}
-      this.setState({ locked: false, pinInput: '' });
-    } else {
-      this.toast('Wrong PIN');
-      this.setState({ pinInput: '' });
-    }
+  selectLoginTarget = (id) => this.setState({ loginTargetId: id, loginPassword: '' });
+  cancelLogin = () => this.setState({ loginTargetId: null, loginPassword: '' });
+  onLoginPassword = (e) => this.setState({ loginPassword: e.target.value });
+  onLoginKeyDown = (e) => { if (e.key === 'Enter') this.submitLogin(); };
+  submitLogin = () => {
+    const id = this.state.loginTargetId;
+    if (!id) return;
+    this.api('/login/', { method: 'POST', body: JSON.stringify({ user: id, password: this.state.loginPassword }) })
+      .then(u => {
+        this.setState({
+          meId: u.id, authToken: u.token, view: 'app', tab: 'home', profileId: u.id,
+          loginTargetId: null, loginPassword: '',
+        }, () => this.save());
+        this.toast('Welcome back, ' + u.name.split(' ')[0] + '!');
+      })
+      .catch(() => this.toast('Incorrect password'));
   };
+  openAvatarViewer = (id) => this.setState({ avatarViewerUserId: id });
+  closeAvatarViewer = () => this.setState({ avatarViewerUserId: null });
   setTab = (t) => this.setState({ tab: t });
   goLog = () => this.setState({ tab: 'log' });
   goBoard = () => this.setState({ tab: 'board' });
-  switchUser = () => this.setState({ view: 'onboarding' });
+  switchUser = () => this.setState({ view: 'onboarding', meId: null, authToken: null, profileId: null }, () => this.save());
   openMe = () => this.openProfile(this.state.meId);
   openProfile = (id) => {
     const p = { tab: 'profile', profileId: id };
@@ -769,9 +808,9 @@ class Component extends DCLogic {
     if (this.state.avatarFile) fd.append('avatar', this.state.avatarFile);
     this.api('/users/', { method: 'POST', body: fd })
       .then(u => {
-        const user = { id: u.id, name: u.name, goal: u.goal, avatar: u.avatar || null, createdAt: u.created_at };
+        const user = { id: u.id, name: u.name, goal: u.goal, avatar: u.avatar || null, avatarFocalX: 50, avatarFocalY: 50, avatarZoom: 100, createdAt: u.created_at };
         this.update({ users: [...this.state.users, user],
-          meId: user.id, view: 'app', tab: 'home', profileId: user.id, nameInput: '',
+          meId: user.id, authToken: u.token, view: 'app', tab: 'home', profileId: user.id, nameInput: '',
           avatarFile: null, avatarPreview: null });
         this.toast('Welcome, ' + name.split(' ')[0] + '!');
       })
@@ -879,16 +918,7 @@ class Component extends DCLogic {
 
   renderVals() {
     const S = this.state;
-    if (S.locked) {
-      return {
-        locked: true, notReady: false, showOnboarding: false, showApp: false, hasUsers: false,
-        pinInput: S.pinInput, onPinInput: this.onPinInput, onPinKeyDown: this.onPinKeyDown, submitPin: this.submitPin,
-        toast: S.toast,
-        existingUsers: [], nameInput: '', goalInput: 150, navTabs: [], statCards: [], meBars: [],
-        recent: [], typeChips: [], minChips: [], todayEntries: [], boardRest: [], calCells: [], calBlanks: [], groupedDays: [], pStats: [],
-      };
-    }
-    if (!S.ready) return { locked: false, notReady: true, showOnboarding: false, showApp: false, hasUsers: false,
+    if (!S.ready) return { notReady: true, showOnboarding: false, showApp: false, hasUsers: false,
       existingUsers: [], nameInput: '', goalInput: 150, toast: null, navTabs: [], statCards: [], meBars: [],
       recent: [], typeChips: [], minChips: [], todayEntries: [], boardRest: [], calCells: [], calBlanks: [], groupedDays: [], pStats: [] };
 
@@ -903,7 +933,7 @@ class Component extends DCLogic {
           objectPosition: (u.avatarFocalX ?? 50) + '% ' + (u.avatarFocalY ?? 50) + '%',
           transform: 'scale(' + ((u.avatarZoom ?? 100) / 100) + ')',
         } }) : initials,
-        onEnlarge: () => this.openPhotoLightbox(u.avatar),
+        onEnlarge: () => this.openAvatarViewer(u.id),
       };
     };
 
@@ -1025,9 +1055,13 @@ class Component extends DCLogic {
 
     const existingUsers = S.users.map(u => { const b = this.scoreBreakdown(u.id, nowMK);
       return { ...uv(u), streak: this.currentStreak(u.id), score: b.total,
-        actionLabel: u.id === S.meId ? 'Continue →' : 'Switch →',
-        onPick: () => this.update({ meId: u.id, view: 'app', tab: 'home', profileId: u.id }) }; })
+        actionLabel: 'Log in →',
+        onSelectLogin: () => this.selectLoginTarget(u.id) }; })
       .sort((a, b) => b.score - a.score);
+
+    const avatarViewerUser = S.avatarViewerUserId
+      ? uv(S.users.find(x => x.id === S.avatarViewerUserId) || { id: null, name: '', avatar: null })
+      : null;
 
     const detailSrc = S.detailEntryId ? S.entries.find(x => x.id === S.detailEntryId) : null;
     const detailEntry = detailSrc ? {
@@ -1048,7 +1082,6 @@ class Component extends DCLogic {
       : (S.editingEntryId ? 'Update workout ✓' : 'Save workout ✓');
 
     return {
-      locked: false,
       notReady: false,
       showOnboarding: S.view === 'onboarding',
       showApp: S.view === 'app' && !!meUser,
@@ -1057,12 +1090,14 @@ class Component extends DCLogic {
       nameInput: S.nameInput, goalInput: S.goalInput, toast: S.toast,
       openMe: this.openMe, goLog: this.goLog, switchUser: this.switchUser, goBoard: this.goBoard,
       createUser: this.createUser, onName: this.onName, onGoal: this.onGoal,
+      loginTargetOpen: !!S.loginTargetId,
+      loginTargetName: (S.users.find(u => u.id === S.loginTargetId) || {}).name || '',
+      loginPassword: S.loginPassword, onLoginPassword: this.onLoginPassword, onLoginKeyDown: this.onLoginKeyDown,
+      submitLogin: this.submitLogin, cancelLogin: this.cancelLogin,
+      newPasswordInput: S.newPasswordInput, onNewPasswordInput: this.onNewPasswordInput, saveNewPassword: this.saveNewPassword,
       onAvatarPick: this.onAvatarPick,
       onAvatarAdjustPick: this.onAvatarAdjustPick,
       avatarPreviewNode: S.avatarPreview ? React.createElement('img', { src: S.avatarPreview, style: { width: '100%', height: '100%', objectFit: 'cover' } }) : '📷',
-      profileAvatarPreviewNode: S.avatarPreview
-        ? React.createElement('img', { src: S.avatarPreview, style: { width: '100%', height: '100%', objectFit: 'cover' } })
-        : pView.avatarNode,
       avatarAdjustOpen: !!S.avatarAdjustOpen,
       avatarZoom: S.avatarZoom,
       onAvatarZoom: this.onAvatarZoom,
@@ -1091,6 +1126,12 @@ class Component extends DCLogic {
       confirmDeleteNow: this.confirmDeleteNow,
       detailEntryOpen: !!detailSrc, detailEntry,
       closeEntryDetail: this.closeEntryDetail, stopClickBubble: this.stopClickBubble,
+      avatarViewerOpen: !!avatarViewerUser,
+      avatarViewerName: avatarViewerUser ? avatarViewerUser.name : '',
+      avatarViewerImage: avatarViewerUser ? avatarViewerUser.avatarNode : null,
+      avatarViewerIsMe: !!(avatarViewerUser && avatarViewerUser.id === S.meId),
+      avatarViewerActionLabel: avatarViewerUser && avatarViewerUser.avatar ? 'Change photo' : 'Add photo',
+      closeAvatarViewer: this.closeAvatarViewer,
       photoLightboxOpen: !!S.photoLightboxUrl, photoLightboxUrl: S.photoLightboxUrl,
       closePhotoLightbox: this.closePhotoLightbox,
       toggleCustom: this.toggleCustom, addType: this.addType, addEntry: this.addEntry,
