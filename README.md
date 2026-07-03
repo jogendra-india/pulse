@@ -13,6 +13,7 @@ A fitness leaderboard app — log workouts, build a streak, and compete on a mon
 - Per-athlete activity calendar and full workout history
 - Works offline: the app shell loads instantly via a service worker, and API calls fail fast with a cached fallback when the backend is unreachable
 
+
 ## Stack
 - Frontend: a single self-contained `index.html` built on a small declarative-component runtime (`support.js`), hosted on GitHub Pages
 - Backend: a Django REST app (`pulse` app in `sonu-office-backend`) providing unauthenticated CRUD for athletes and workout entries, including image uploads
