@@ -112,7 +112,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
           <div style="display:flex;align-items:center;gap:10px;padding:6px 12px 6px 6px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:#15170F;color:#F3F5EC;">
             <label title="Change profile photo" style="width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:16px;color:#0C0D0A;background:{{ me.color }};cursor:pointer;overflow:hidden;flex-shrink:0;">
               {{ me.avatarNode }}
-              <input type="file" accept="image/*" onChange="{{ onHeaderAvatarPick }}" style="display:none;" />
+              <input type="file" accept="image/*" onChange="{{ onAvatarAdjustPick }}" style="display:none;" />
             </label>
             <button onClick="{{ openMe }}" style="text-align:left;line-height:1.1;background:transparent;border:none;cursor:pointer;color:inherit;padding:0;font:inherit;">
               <div style="font-weight:700;font-size:14px;">{{ me.name }}</div>
@@ -375,12 +375,9 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
                   <div style="width:48px;height:48px;border-radius:14px;overflow:hidden;flex-shrink:0;background:#0C0D0A;display:flex;align-items:center;justify-content:center;font-size:20px;">{{ profileAvatarPreviewNode }}</div>
                   <div>
                     <div style="font-family:Barlow Condensed;font-weight:700;font-size:16px;text-transform:uppercase;letter-spacing:.06em;">Profile photo</div>
-                    <label style="cursor:pointer;color:#C7F536;font-size:13px;font-weight:700;">Choose photo<input type="file" accept="image/*" onChange="{{ onAvatarPick }}" style="display:none;" /></label>
+                    <label style="cursor:pointer;color:#C7F536;font-size:13px;font-weight:700;">Choose photo<input type="file" accept="image/*" onChange="{{ onAvatarAdjustPick }}" style="display:none;" /></label>
                   </div>
                 </div>
-                <sc-if value="{{ avatarDirty }}" hint-placeholder-val="{{ false }}">
-                  <button onClick="{{ saveAvatar }}" style="padding:10px 18px;border-radius:10px;border:1px solid #C7F536;background:transparent;color:#C7F536;font-weight:700;cursor:pointer;">Save photo</button>
-                </sc-if>
               </div>
             </sc-if>
             <sc-if value="{{ pIsMe }}" hint-placeholder-val="{{ false }}">
@@ -482,6 +479,31 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
     </div>
   </sc-if>
 
+  <sc-if value="{{ avatarAdjustOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;background:rgba(12,13,10,.8);backdrop-filter:blur(4px);z-index:68;display:flex;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#15170F;border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:22px;max-width:320px;width:100%;display:flex;flex-direction:column;gap:16px;animation:flbpop .2s ease;">
+        <div style="font-family:Barlow Condensed;font-weight:800;font-size:20px;text-transform:uppercase;letter-spacing:.04em;text-align:center;">Adjust photo</div>
+        <div style="width:150px;height:150px;margin:0 auto;border-radius:24px;overflow:hidden;background:#0C0D0A;">{{ avatarAdjustPreview }}</div>
+        <div>
+          <label style="display:block;color:#9DA391;font-size:11px;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px;">Zoom</label>
+          <input type="range" min="100" max="220" value="{{ avatarZoom }}" onInput="{{ onAvatarZoom }}" style="width:100%;" />
+        </div>
+        <div>
+          <label style="display:block;color:#9DA391;font-size:11px;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px;">Position</label>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:108px;margin:0 auto;">
+            <sc-for list="{{ focalGrid }}" as="g" hint-placeholder-count="9">
+              <button onClick="{{ g.onClick }}" style="{{ g.style }}">●</button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button onClick="{{ cancelAvatarAdjust }}" style="flex:1;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:transparent;color:#F3F5EC;font-weight:700;cursor:pointer;" style-hover="border-color:#C7F536;">Cancel</button>
+          <button onClick="{{ saveAdjustedAvatar }}" style="flex:1;padding:12px;border-radius:10px;border:none;background:#C7F536;color:#0C0D0A;font-family:Barlow Condensed;font-weight:800;font-size:16px;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;">Save</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
   <sc-if value="{{ confirmDeleteOpen }}" hint-placeholder-val="{{ false }}">
     <div style="position:fixed;inset:0;background:rgba(12,13,10,.7);backdrop-filter:blur(4px);z-index:60;display:flex;align-items:center;justify-content:center;padding:20px;">
       <div style="background:#15170F;border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:26px;max-width:340px;width:100%;display:flex;flex-direction:column;gap:18px;text-align:center;animation:flbpop .2s ease;">
@@ -514,6 +536,7 @@ class Component extends DCLogic {
     form: { date: '', minutes: '', type: 'Running', customType: '', adding: false, time: '', notes: '' },
     nameInput: '', goalInput: 150,
     avatarFile: null, avatarPreview: null,  // pending pick, not yet saved
+    avatarAdjustOpen: false, avatarFocalX: 50, avatarFocalY: 50, avatarZoom: 100,
     entryPhotoFile: null, entryPhotoPreview: null,
     editingEntryId: null,
     confirmDeleteId: null,
@@ -575,7 +598,7 @@ class Component extends DCLogic {
         this.api('/users/?limit=500'),
         this.api('/entries/?limit=2000'),
       ]);
-      const users = (usersResp.results || []).map(u => ({ id: u.id, name: u.name, goal: u.goal, avatar: u.avatar || null, createdAt: u.created_at }));
+      const users = (usersResp.results || []).map(u => ({ id: u.id, name: u.name, goal: u.goal, avatar: u.avatar || null, avatarFocalX: u.avatar_focal_x ?? 50, avatarFocalY: u.avatar_focal_y ?? 50, avatarZoom: u.avatar_zoom ?? 100, createdAt: u.created_at }));
       const entries = (entriesResp.results || []).map(e => ({ id: e.id, userId: e.user, date: e.date, minutes: e.minutes, type: e.type, notes: e.notes || '', photo: e.photo || null, startTime: e.start_time || null, createdAt: e.created_at }));
       try { localStorage.setItem(this.KEY + '.cache', JSON.stringify({ users, entries, syncedAt: Date.now() })); } catch (e) {}
       const valid = meId && users.some(u => u.id === meId);
@@ -675,27 +698,36 @@ class Component extends DCLogic {
     if (!file) return;
     this.setState({ avatarFile: file, avatarPreview: URL.createObjectURL(file) });
   };
-  onHeaderAvatarPick = (e) => {
+  onAvatarAdjustPick = (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file || !this.state.meId) return;
-    const fd = new FormData();
-    fd.append('avatar', file);
-    this.api('/users/' + this.state.meId + '/', { method: 'PATCH', body: fd })
-      .then(u => {
-        this.setState({ users: this.state.users.map(x => x.id === this.state.meId ? { ...x, avatar: u.avatar } : x) });
-        this.toast('Profile photo updated');
-      })
-      .catch(() => this.toast('Could not update photo'));
+    this.setState({
+      avatarFile: file, avatarPreview: URL.createObjectURL(file),
+      avatarFocalX: 50, avatarFocalY: 50, avatarZoom: 100, avatarAdjustOpen: true,
+    });
   };
-  saveAvatar = () => {
+  setAvatarFocal = (x, y) => this.setState({ avatarFocalX: x, avatarFocalY: y });
+  onAvatarZoom = (e) => this.setState({ avatarZoom: Number(e.target.value) });
+  cancelAvatarAdjust = () => this.setState({
+    avatarFile: null, avatarPreview: null, avatarAdjustOpen: false,
+    avatarFocalX: 50, avatarFocalY: 50, avatarZoom: 100,
+  });
+  saveAdjustedAvatar = () => {
     if (!this.state.avatarFile || !this.state.meId) return;
     const fd = new FormData();
     fd.append('avatar', this.state.avatarFile);
+    fd.append('avatar_focal_x', String(this.state.avatarFocalX));
+    fd.append('avatar_focal_y', String(this.state.avatarFocalY));
+    fd.append('avatar_zoom', String(this.state.avatarZoom));
     this.api('/users/' + this.state.meId + '/', { method: 'PATCH', body: fd })
       .then(u => {
         this.setState({
-          users: this.state.users.map(x => x.id === this.state.meId ? { ...x, avatar: u.avatar } : x),
-          avatarFile: null, avatarPreview: null,
+          users: this.state.users.map(x => x.id === this.state.meId ? {
+            ...x, avatar: u.avatar,
+            avatarFocalX: u.avatar_focal_x, avatarFocalY: u.avatar_focal_y, avatarZoom: u.avatar_zoom,
+          } : x),
+          avatarFile: null, avatarPreview: null, avatarAdjustOpen: false,
+          avatarFocalX: 50, avatarFocalY: 50, avatarZoom: 100,
         });
         this.toast('Profile photo updated');
       })
@@ -866,7 +898,11 @@ class Component extends DCLogic {
       return {
         id: u.id, name: u.name, initials, color: this.color(u.name),
         avatar: u.avatar || null,
-        avatarNode: u.avatar ? React.createElement('img', { src: u.avatar, style: { width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' } }) : initials,
+        avatarNode: u.avatar ? React.createElement('img', { src: u.avatar, style: {
+          width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit',
+          objectPosition: (u.avatarFocalX ?? 50) + '% ' + (u.avatarFocalY ?? 50) + '%',
+          transform: 'scale(' + ((u.avatarZoom ?? 100) / 100) + ')',
+        } }) : initials,
         onEnlarge: () => this.openPhotoLightbox(u.avatar),
       };
     };
@@ -1022,13 +1058,25 @@ class Component extends DCLogic {
       openMe: this.openMe, goLog: this.goLog, switchUser: this.switchUser, goBoard: this.goBoard,
       createUser: this.createUser, onName: this.onName, onGoal: this.onGoal,
       onAvatarPick: this.onAvatarPick,
-      onHeaderAvatarPick: this.onHeaderAvatarPick,
-      saveAvatar: this.saveAvatar,
-      avatarDirty: !!S.avatarFile,
+      onAvatarAdjustPick: this.onAvatarAdjustPick,
       avatarPreviewNode: S.avatarPreview ? React.createElement('img', { src: S.avatarPreview, style: { width: '100%', height: '100%', objectFit: 'cover' } }) : '📷',
-      profileAvatarPreviewNode: (S.avatarPreview || pView.avatar)
-        ? React.createElement('img', { src: S.avatarPreview || pView.avatar, style: { width: '100%', height: '100%', objectFit: 'cover' } })
-        : '📷',
+      profileAvatarPreviewNode: S.avatarPreview
+        ? React.createElement('img', { src: S.avatarPreview, style: { width: '100%', height: '100%', objectFit: 'cover' } })
+        : pView.avatarNode,
+      avatarAdjustOpen: !!S.avatarAdjustOpen,
+      avatarZoom: S.avatarZoom,
+      onAvatarZoom: this.onAvatarZoom,
+      cancelAvatarAdjust: this.cancelAvatarAdjust,
+      saveAdjustedAvatar: this.saveAdjustedAvatar,
+      avatarAdjustPreview: S.avatarPreview ? React.createElement('img', { src: S.avatarPreview, style: {
+        width: '100%', height: '100%', objectFit: 'cover',
+        objectPosition: S.avatarFocalX + '% ' + S.avatarFocalY + '%',
+        transform: 'scale(' + (S.avatarZoom / 100) + ')',
+      } }) : null,
+      focalGrid: [0, 50, 100].flatMap(y => [0, 50, 100].map(x => ({
+        onClick: () => this.setAvatarFocal(x, y),
+        style: 'aspect-ratio:1;border-radius:8px;border:1px solid ' + (S.avatarFocalX === x && S.avatarFocalY === y ? '#C7F536' : 'rgba(255,255,255,.15)') + ';background:transparent;color:' + (S.avatarFocalX === x && S.avatarFocalY === y ? '#C7F536' : '#6b7061') + ';cursor:pointer;font-size:10px;',
+      }))),
       onDate: this.onDate, onTime: this.onTime, onMinutes: this.onMinutes, onNotes: this.onNotes, onCustom: this.onCustom,
       onEntryPhotoPick: this.onEntryPhotoPick,
       entryPhotoNode: S.entryPhotoPreview ? React.createElement('img', { src: S.entryPhotoPreview, style: { width: '100%', height: '100%', objectFit: 'cover' } }) : '📷',
