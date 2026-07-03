@@ -1012,7 +1012,7 @@ class Component extends DCLogic {
       profileAvatarPreviewNode: (S.avatarPreview || pView.avatar)
         ? React.createElement('img', { src: S.avatarPreview || pView.avatar, style: { width: '100%', height: '100%', objectFit: 'cover' } })
         : '📷',
-      onDate: this.onDate, onMinutes: this.onMinutes, onNotes: this.onNotes, onCustom: this.onCustom,
+      onDate: this.onDate, onTime: this.onTime, onMinutes: this.onMinutes, onNotes: this.onNotes, onCustom: this.onCustom,
       onEntryPhotoPick: this.onEntryPhotoPick,
       entryPhotoNode: S.entryPhotoPreview ? React.createElement('img', { src: S.entryPhotoPreview, style: { width: '100%', height: '100%', objectFit: 'cover' } }) : '📷',
       entryPhotoLabel: S.entryPhotoFile ? 'Change photo' : 'Add photo',
