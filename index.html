@@ -109,13 +109,16 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
             </sc-for>
           </div>
           <div style="flex:1;"></div>
-          <button onClick="{{ openMe }}" style="display:flex;align-items:center;gap:10px;padding:6px 12px 6px 6px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:#15170F;cursor:pointer;color:#F3F5EC;" style-hover="border-color:#C7F536;">
-            <div style="width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:16px;color:#0C0D0A;background:{{ me.color }};">{{ me.avatarNode }}</div>
-            <div style="text-align:left;line-height:1.1;">
+          <div style="display:flex;align-items:center;gap:10px;padding:6px 12px 6px 6px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:#15170F;color:#F3F5EC;">
+            <label title="Change profile photo" style="width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:16px;color:#0C0D0A;background:{{ me.color }};cursor:pointer;overflow:hidden;flex-shrink:0;">
+              {{ me.avatarNode }}
+              <input type="file" accept="image/*" onChange="{{ onHeaderAvatarPick }}" style="display:none;" />
+            </label>
+            <button onClick="{{ openMe }}" style="text-align:left;line-height:1.1;background:transparent;border:none;cursor:pointer;color:inherit;padding:0;font:inherit;">
               <div style="font-weight:700;font-size:14px;">{{ me.name }}</div>
               <div style="color:#C7F536;font-size:12px;font-family:Barlow Condensed;font-weight:700;letter-spacing:.04em;">{{ meScore }} PTS</div>
-            </div>
-          </button>
+            </button>
+          </div>
           <button onClick="{{ switchUser }}" title="Switch athlete" style="padding:9px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.08);background:transparent;color:#9DA391;cursor:pointer;font-size:13px;" style-hover="color:#F3F5EC;border-color:#C7F536;">Switch</button>
         </div>
       </div>
@@ -266,9 +269,9 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
                       </div>
                       <div style="font-family:Barlow Condensed;font-weight:700;font-size:17px;">{{ e.minutes }}<span style="font-size:12px;color:#9DA391;"> min</span></div>
                       <sc-if value="{{ e.editable }}" hint-placeholder-val="{{ false }}">
-                        <button onClick="{{ e.onEditStop }}" style="width:26px;height:26px;border-radius:8px;border:none;background:transparent;color:#6b7061;cursor:pointer;font-size:13px;" style-hover="background:rgba(199,245,54,.15);color:#C7F536;">✎</button>
+                        <button onClick="{{ e.onEditStop }}" style="width:38px;height:38px;border-radius:10px;border:none;background:transparent;color:#6b7061;cursor:pointer;font-size:14px;flex-shrink:0;" style-hover="background:rgba(199,245,54,.15);color:#C7F536;">✎</button>
                       </sc-if>
-                      <button onClick="{{ e.onRequestDeleteStop }}" style="width:26px;height:26px;border-radius:8px;border:none;background:transparent;color:#6b7061;cursor:pointer;font-size:14px;" style-hover="background:rgba(255,106,61,.15);color:#FF6A3D;">✕</button>
+                      <button onClick="{{ e.onRequestDeleteStop }}" style="width:38px;height:38px;border-radius:10px;border:none;background:transparent;color:#6b7061;cursor:pointer;font-size:15px;flex-shrink:0;" style-hover="background:rgba(255,106,61,.15);color:#FF6A3D;">✕</button>
                     </div>
                   </sc-for>
                 </div>
@@ -346,7 +349,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
             <button onClick="{{ goBoard }}" style="align-self:flex-start;background:transparent;border:none;color:#9DA391;cursor:pointer;font-size:14px;padding:4px 0;" style-hover="color:#C7F536;">← Leaderboard</button>
 
             <div style="background:linear-gradient(120deg,#1c2013,#15170F);border:1px solid rgba(255,255,255,.08);border-radius:22px;padding:24px;display:flex;gap:18px;align-items:center;flex-wrap:wrap;">
-              <div style="width:72px;height:72px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:30px;color:#0C0D0A;background:{{ pView.color }};flex-shrink:0;">{{ pView.avatarNode }}</div>
+              <div onClick="{{ pView.onEnlarge }}" style="width:72px;height:72px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:30px;color:#0C0D0A;background:{{ pView.color }};flex-shrink:0;cursor:pointer;">{{ pView.avatarNode }}</div>
               <div style="flex:1;min-width:180px;">
                 <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
                   <span style="font-family:Barlow Condensed;font-weight:800;font-size:32px;text-transform:uppercase;letter-spacing:.02em;line-height:1;">{{ pView.name }}</span>
@@ -430,8 +433,8 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
                               </sc-if>
                             </div>
                             <div style="font-family:Barlow Condensed;font-weight:700;font-size:16px;">{{ it.minutes }}<span style="font-size:11px;color:#9DA391;"> min</span></div>
-                            <sc-if value="{{ it.editable }}" hint-placeholder-val="{{ false }}"><button onClick="{{ it.onEditStop }}" style="width:24px;height:24px;border-radius:7px;border:none;background:transparent;color:#6b7061;cursor:pointer;font-size:12px;" style-hover="background:rgba(199,245,54,.15);color:#C7F536;">✎</button></sc-if>
-                            <sc-if value="{{ pIsMe }}" hint-placeholder-val="{{ false }}"><button onClick="{{ it.onRequestDeleteStop }}" style="width:24px;height:24px;border-radius:7px;border:none;background:transparent;color:#6b7061;cursor:pointer;font-size:13px;" style-hover="background:rgba(255,106,61,.15);color:#FF6A3D;">✕</button></sc-if>
+                            <sc-if value="{{ it.editable }}" hint-placeholder-val="{{ false }}"><button onClick="{{ it.onEditStop }}" style="width:36px;height:36px;border-radius:9px;border:none;background:transparent;color:#6b7061;cursor:pointer;font-size:13px;flex-shrink:0;" style-hover="background:rgba(199,245,54,.15);color:#C7F536;">✎</button></sc-if>
+                            <sc-if value="{{ pIsMe }}" hint-placeholder-val="{{ false }}"><button onClick="{{ it.onRequestDeleteStop }}" style="width:36px;height:36px;border-radius:9px;border:none;background:transparent;color:#6b7061;cursor:pointer;font-size:14px;flex-shrink:0;" style-hover="background:rgba(255,106,61,.15);color:#FF6A3D;">✕</button></sc-if>
                           </div>
                         </sc-for>
                       </div>
@@ -672,6 +675,18 @@ class Component extends DCLogic {
     if (!file) return;
     this.setState({ avatarFile: file, avatarPreview: URL.createObjectURL(file) });
   };
+  onHeaderAvatarPick = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file || !this.state.meId) return;
+    const fd = new FormData();
+    fd.append('avatar', file);
+    this.api('/users/' + this.state.meId + '/', { method: 'PATCH', body: fd })
+      .then(u => {
+        this.setState({ users: this.state.users.map(x => x.id === this.state.meId ? { ...x, avatar: u.avatar } : x) });
+        this.toast('Profile photo updated');
+      })
+      .catch(() => this.toast('Could not update photo'));
+  };
   saveAvatar = () => {
     if (!this.state.avatarFile || !this.state.meId) return;
     const fd = new FormData();
@@ -852,6 +867,7 @@ class Component extends DCLogic {
         id: u.id, name: u.name, initials, color: this.color(u.name),
         avatar: u.avatar || null,
         avatarNode: u.avatar ? React.createElement('img', { src: u.avatar, style: { width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' } }) : initials,
+        onEnlarge: () => this.openPhotoLightbox(u.avatar),
       };
     };
 
@@ -1006,6 +1022,7 @@ class Component extends DCLogic {
       openMe: this.openMe, goLog: this.goLog, switchUser: this.switchUser, goBoard: this.goBoard,
       createUser: this.createUser, onName: this.onName, onGoal: this.onGoal,
       onAvatarPick: this.onAvatarPick,
+      onHeaderAvatarPick: this.onHeaderAvatarPick,
       saveAvatar: this.saveAvatar,
       avatarDirty: !!S.avatarFile,
       avatarPreviewNode: S.avatarPreview ? React.createElement('img', { src: S.avatarPreview, style: { width: '100%', height: '100%', objectFit: 'cover' } }) : '📷',
