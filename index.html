@@ -96,7 +96,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
             <label style="display:block;color:#9DA391;font-size:11px;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px;">Weekly goal (minutes)</label>
             <input type="number" value="{{ goalInput }}" onInput="{{ onGoal }}" style="width:100%;padding:13px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:#0C0D0A;color:#F3F5EC;font-size:16px;outline:none;" />
           </div>
-          <button onClick="{{ createUser }}" style="margin-top:4px;padding:14px;border-radius:12px;border:none;background:#C7F536;color:#0C0D0A;font-family:Barlow Condensed;font-weight:800;font-size:20px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;" style-hover="background:#d4ff4d;">Start training →</button>
+          <button onClick="{{ createUser }}" disabled="{{ creatingUser }}" style="{{ createButtonStyle }}">{{ createButtonContent }}</button>
         </div>
         </sc-if>
       </div>
@@ -597,6 +597,7 @@ class Component extends DCLogic {
     typeOptions: ['Running', 'Cycling', 'Gym / Weights', 'Yoga', 'Swimming', 'Walking', 'HIIT', 'Sports'],
     toast: null,
     attendance: [], skipPromptOpen: false, skipReasonInput: '', savingSkip: false,
+    creatingUser: false,
   };
 
   componentDidMount() {
@@ -632,7 +633,21 @@ class Component extends DCLogic {
       if (res.status === 401 && hadToken) {
         this.forceLogout('Your session expired — please log in again.');
       }
-      if (!res.ok) throw new Error('Pulse API ' + res.status + ' on ' + path);
+      if (!res.ok) {
+        // Surface a field-level or top-level validation message when the
+        // backend sends one (e.g. "That name is already taken"), so callers
+        // can show something more useful than a generic failure toast.
+        let detail = null;
+        try {
+          const body = await res.json();
+          const firstField = Object.keys(body).find(k => k !== 'detail');
+          detail = body.detail || (firstField ? [].concat(body[firstField])[0] : null);
+        } catch (e) {}
+        const err = new Error('Pulse API ' + res.status + ' on ' + path);
+        err.status = res.status;
+        err.detail = detail;
+        throw err;
+      }
       return res.status === 204 ? null : res.json();
     } finally {
       clearTimeout(t);
@@ -866,6 +881,7 @@ class Component extends DCLogic {
     this.setState(p);
   };
   createUser = () => {
+    if (this.state.creatingUser) return;
     const name = (this.state.nameInput || '').trim();
     if (!name) { this.toast('Enter your name'); return; }
     const goal = Math.max(30, Number(this.state.goalInput) || 150);
@@ -873,15 +889,19 @@ class Component extends DCLogic {
     fd.append('name', name);
     fd.append('goal', String(goal));
     if (this.state.avatarFile) fd.append('avatar', this.state.avatarFile);
+    this.setState({ creatingUser: true });
     this.api('/users/', { method: 'POST', body: fd })
       .then(u => {
         const user = { id: u.id, name: u.name, goal: u.goal, avatar: u.avatar || null, avatarFocalX: 50, avatarFocalY: 50, avatarZoom: 100, createdAt: u.created_at };
         this.update({ users: [...this.state.users, user],
           meId: user.id, authToken: u.token, view: 'app', tab: 'home', profileId: user.id, nameInput: '',
-          avatarFile: null, avatarPreview: null });
+          avatarFile: null, avatarPreview: null, creatingUser: false });
         this.toast('Welcome, ' + name.split(' ')[0] + '!');
       })
-      .catch(() => this.toast('Could not create profile'));
+      .catch((err) => {
+        this.setState({ creatingUser: false });
+        this.toast((err && err.detail) || 'Could not create profile');
+      });
   };
   setForm = (patch) => this.setState({ form: { ...this.state.form, ...patch } });
   onDate = (e) => this.setForm({ date: e.target.value });
@@ -1051,6 +1071,7 @@ class Component extends DCLogic {
       const d = new Date(); d.setHours(p[0], p[1], 0, 0);
       return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
     };
+    const statusRank = { logged: 0, skipped: 1, missing: 2 };
     const todayStrip = S.users.map(u => {
       const v = uv(u);
       const a = attendanceByUser[u.id];
@@ -1064,12 +1085,12 @@ class Component extends DCLogic {
         subColor = '#6b7061'; ring = 'rgba(255,255,255,.1)'; opacity = 0.45;
       }
       return {
-        id: u.id, name: (u.name || '').split(' ')[0], avatarNode: v.avatarNode,
+        id: u.id, status: st, name: (u.name || '').split(' ')[0], avatarNode: v.avatarNode,
         avatarStyle: 'width:52px;height:52px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:19px;color:#0C0D0A;background:' + v.color + ';border:2px solid ' + ring + ';opacity:' + opacity + ';overflow:hidden;',
         subStyle: 'font-size:10px;line-height:1.25;color:' + subColor + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:72px;',
         sub, onOpen: () => this.openProfile(u.id),
       };
-    });
+    }).sort((a, b) => statusRank[a.status] - statusRank[b.status]);
 
     const mySkip = attendanceByUser[S.meId] || null;
     const showSkipSection = !!mySkip && mySkip.status !== 'logged';
@@ -1210,6 +1231,14 @@ class Component extends DCLogic {
           'Saving…')
       : (S.editingEntryId ? 'Update workout ✓' : 'Save workout ✓');
 
+    const createButtonStyle = 'margin-top:4px;padding:14px;border-radius:12px;border:none;background:#C7F536;color:#0C0D0A;font-family:Barlow Condensed;font-weight:800;font-size:20px;letter-spacing:.06em;text-transform:uppercase;'
+      + (S.creatingUser ? 'opacity:.6;cursor:not-allowed;' : 'cursor:pointer;');
+    const createButtonContent = S.creatingUser
+      ? React.createElement(React.Fragment, null,
+          React.createElement('span', { style: { display: 'inline-block', width: '16px', height: '16px', border: '2px solid rgba(12,13,10,.35)', borderTopColor: '#0C0D0A', borderRadius: '50%', animation: 'flbspin .6s linear infinite', marginRight: '8px', verticalAlign: '-3px' } }),
+          'Creating…')
+      : 'Start training →';
+
     return {
       notReady: false,
       showOnboarding: S.view === 'onboarding',
@@ -1250,6 +1279,7 @@ class Component extends DCLogic {
       cancelEditEntry: this.cancelEditEntry,
       savingEntry: !!S.savingEntry,
       saveButtonStyle, saveButtonContent,
+      createButtonStyle, createButtonContent, creatingUser: !!S.creatingUser,
       confirmDeleteOpen: !!S.confirmDeleteId,
       cancelDeleteConfirm: this.cancelDeleteConfirm,
       confirmDeleteNow: this.confirmDeleteNow,
