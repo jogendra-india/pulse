@@ -4,7 +4,7 @@
 // manual cache-version bump required.
 const CACHE = 'pulse-shell';
 
-const SHELL_ABS = ['./', './index.html', './support.js']
+const SHELL_ABS = ['./', './index.html', './support.js', './manifest.json', './icon-192.png', './icon-512.png', './icon-maskable-512.png']
   .map((p) => new URL(p, self.location).href)
   .concat([
     'https://unpkg.com/react@18.3.1/umd/react.production.min.js',

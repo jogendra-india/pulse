@@ -3,6 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#0C0D0A">
+<link rel="apple-touch-icon" href="./icon-192.png">
 <script src="./support.js"></script>
 <script>
 if ('serviceWorker' in navigator) {
@@ -128,6 +131,15 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
       </div>
 
       <div style="max-width:1040px;margin:0 auto;padding:24px 20px 90px;">
+
+        <sc-if value="{{ showInstallBanner }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:linear-gradient(120deg,rgba(199,245,54,.1),rgba(199,245,54,.03));border:1px solid rgba(199,245,54,.25);border-radius:16px;padding:14px 18px;margin-bottom:18px;">
+            <div style="font-size:22px;">📲</div>
+            <div style="flex:1;min-width:200px;font-size:14px;color:#F3F5EC;">Install Pulse on your phone — one tap from your home screen, works offline.</div>
+            <button onClick="{{ installApp }}" style="padding:10px 18px;border-radius:10px;border:none;background:#C7F536;color:#0C0D0A;font-family:Barlow Condensed;font-weight:800;font-size:14px;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;white-space:nowrap;">Install</button>
+            <button onClick="{{ dismissInstallBanner }}" style="background:transparent;border:none;color:#6b7061;font-size:20px;line-height:1;cursor:pointer;padding:4px 6px;" style-hover="color:#F3F5EC;">×</button>
+          </div>
+        </sc-if>
 
         <!-- HOME -->
         <sc-if value="{{ isHome }}" hint-placeholder-val="{{ false }}">
@@ -598,6 +610,7 @@ class Component extends DCLogic {
     toast: null,
     attendance: [], skipPromptOpen: false, skipReasonInput: '', savingSkip: false,
     creatingUser: false,
+    canInstall: false, installBannerDismissed: false,
   };
 
   componentDidMount() {
@@ -615,7 +628,32 @@ class Component extends DCLogic {
       form: { ...this.state.form, date: this.today, time: this.nowTimeStr() },
     });
     this.loadAll(meId, authToken);
+
+    // Chrome/Edge fire this instead of showing their own install UI when the
+    // page is installable — stash it so our own "Install" button can trigger
+    // the native prompt on demand. Standalone (already-installed) launches
+    // never get this event, so the banner naturally never appears there.
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      this._installPromptEvent = e;
+      this.setState({ canInstall: true });
+    });
+    window.addEventListener('appinstalled', () => {
+      this._installPromptEvent = null;
+      this.setState({ canInstall: false });
+    });
   }
+
+  installApp = () => {
+    const e = this._installPromptEvent;
+    if (!e) return;
+    e.prompt();
+    e.userChoice.then(() => {
+      this._installPromptEvent = null;
+      this.setState({ canInstall: false });
+    });
+  };
+  dismissInstallBanner = () => this.setState({ installBannerDismissed: true });
 
   async api(path, options = {}, timeoutMs = 5000) {
     const ctrl = new AbortController();
@@ -1036,7 +1074,8 @@ class Component extends DCLogic {
     if (!S.ready) return { notReady: true, showOnboarding: false, showApp: false, hasUsers: false,
       existingUsers: [], nameInput: '', goalInput: 150, toast: null, navTabs: [], statCards: [], meBars: [],
       recent: [], typeChips: [], minChips: [], todayEntries: [], boardRest: [], calCells: [], calBlanks: [], groupedDays: [], pStats: [],
-      todayStrip: [], showSkipSection: false, isSkippedToday: false, skipPromptOpen: false, skipReasonInput: '' };
+      todayStrip: [], showSkipSection: false, isSkippedToday: false, skipPromptOpen: false, skipReasonInput: '',
+      showInstallBanner: false };
 
     const now = new Date(); const nowMK = this.monthKeyOf(now); const mk = S.monthKey || nowMK;
     const uv = (u) => {
@@ -1280,6 +1319,8 @@ class Component extends DCLogic {
       savingEntry: !!S.savingEntry,
       saveButtonStyle, saveButtonContent,
       createButtonStyle, createButtonContent, creatingUser: !!S.creatingUser,
+      showInstallBanner: !!S.canInstall && !S.installBannerDismissed,
+      installApp: this.installApp, dismissInstallBanner: this.dismissInstallBanner,
       confirmDeleteOpen: !!S.confirmDeleteId,
       cancelDeleteConfirm: this.cancelDeleteConfirm,
       confirmDeleteNow: this.confirmDeleteNow,
