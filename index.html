@@ -62,7 +62,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
       </div>
 
       <div style="width:100%;max-width:430px;display:flex;flex-direction:column;gap:18px;">
-        <sc-if value="{{ hasUsers }}" hint-placeholder-val="{{ false }}">
+        <sc-if value="{{ showJumpBackIn }}" hint-placeholder-val="{{ false }}">
           <div style="display:flex;flex-direction:column;gap:10px;">
             <div style="font-family:Barlow Condensed;font-weight:700;font-size:19px;text-transform:uppercase;letter-spacing:.08em;color:#9DA391;">Jump back in</div>
             <sc-for list="{{ existingUsers }}" as="u" hint-placeholder-count="3">
@@ -1084,7 +1084,7 @@ class Component extends DCLogic {
 
   renderVals() {
     const S = this.state;
-    if (!S.ready) return { notReady: true, showOnboarding: false, showApp: false, hasUsers: false,
+    if (!S.ready) return { notReady: true, showOnboarding: false, showApp: false, hasUsers: false, showJumpBackIn: false,
       existingUsers: [], nameInput: '', goalInput: 150, toast: null, navTabs: [], statCards: [], meBars: [],
       recent: [], typeChips: [], minChips: [], todayEntries: [], boardRest: [], calCells: [], calBlanks: [], groupedDays: [], pStats: [],
       todayStrip: [], showSkipSection: false, isSkippedToday: false, skipPromptOpen: false, skipReasonInput: '',
@@ -1297,6 +1297,7 @@ class Component extends DCLogic {
       showApp: S.view === 'app' && !!meUser,
       isHome: S.tab === 'home', isLog: S.tab === 'log', isBoard: S.tab === 'board', isProfile: S.tab === 'profile',
       hasUsers: existingUsers.length > 0, existingUsers,
+      showJumpBackIn: existingUsers.length > 0 && !S.loginTargetId,
       nameInput: S.nameInput, goalInput: S.goalInput, toast: S.toast,
       openMe: this.openMe, goLog: this.goLog, goBoard: this.goBoard,
       createUser: this.createUser, onName: this.onName, onGoal: this.onGoal,
