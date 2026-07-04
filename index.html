@@ -32,6 +32,16 @@ input::placeholder{color:#6b7061;}
 input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55;cursor:pointer;}
 ::-webkit-scrollbar{width:10px;height:10px;}
 ::-webkit-scrollbar-thumb{background:#2a2e20;border-radius:10px;}
+.today-scroll{-webkit-mask-image:linear-gradient(to right, #000 92%, transparent 100%);mask-image:linear-gradient(to right, #000 92%, transparent 100%);}
+.today-scroll::-webkit-scrollbar{display:none;}
+.today-scroll{scrollbar-width:none;}
+@media (max-width: 560px){
+  .hdr-me-text{display:none;}
+  .hdr-me{padding:6px !important;}
+  .hdr-logo{font-size:18px !important;}
+  .nav-tab-btn{padding:7px 10px !important;font-size:13px !important;}
+  .hdr-row{gap:8px !important;padding:10px 14px !important;}
+}
 </style>
 </helmet>
 
@@ -110,19 +120,19 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
   <sc-if value="{{ showApp }}" hint-placeholder-val="{{ false }}">
     <div>
       <div style="position:sticky;top:0;z-index:20;backdrop-filter:blur(10px);background:rgba(12,13,10,.82);border-bottom:1px solid rgba(255,255,255,.07);">
-        <div style="max-width:1040px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
-          <div style="font-family:Barlow Condensed;font-weight:800;font-size:26px;letter-spacing:.03em;">PULSE<span style="color:#C7F536;">.</span></div>
+        <div class="hdr-row" style="max-width:1040px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+          <div class="hdr-logo" style="font-family:Barlow Condensed;font-weight:800;font-size:26px;letter-spacing:.03em;">PULSE<span style="color:#C7F536;">.</span></div>
           <div style="display:flex;gap:6px;background:#15170F;padding:5px;border-radius:999px;border:1px solid rgba(255,255,255,.06);">
             <sc-for list="{{ navTabs }}" as="t" hint-placeholder-count="3">
-              <button onClick="{{ t.onClick }}" style="{{ t.style }}">{{ t.label }}</button>
+              <button onClick="{{ t.onClick }}" class="nav-tab-btn" style="{{ t.style }}">{{ t.label }}</button>
             </sc-for>
           </div>
           <div style="flex:1;"></div>
-          <div style="display:flex;align-items:center;gap:10px;padding:6px 12px 6px 6px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:#15170F;color:#F3F5EC;">
+          <div class="hdr-me" style="display:flex;align-items:center;gap:10px;padding:6px 12px 6px 6px;border-radius:999px;border:1px solid rgba(255,255,255,.08);background:#15170F;color:#F3F5EC;">
             <div onClick="{{ me.onEnlarge }}" title="View profile photo" style="width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:16px;color:#0C0D0A;background:{{ me.color }};cursor:pointer;overflow:hidden;flex-shrink:0;">
               {{ me.avatarNode }}
             </div>
-            <button onClick="{{ openMe }}" style="text-align:left;line-height:1.1;background:transparent;border:none;cursor:pointer;color:inherit;padding:0;font:inherit;">
+            <button onClick="{{ openMe }}" class="hdr-me-text" style="text-align:left;line-height:1.1;background:transparent;border:none;cursor:pointer;color:inherit;padding:0;font:inherit;">
               <div style="font-weight:700;font-size:14px;">{{ me.name }}</div>
               <div style="color:#C7F536;font-size:12px;font-family:Barlow Condensed;font-weight:700;letter-spacing:.04em;">{{ meScore }} PTS</div>
             </button>
@@ -133,11 +143,13 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
       <div style="max-width:1040px;margin:0 auto;padding:24px 20px 90px;">
 
         <sc-if value="{{ showInstallBanner }}" hint-placeholder-val="{{ false }}">
-          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:linear-gradient(120deg,rgba(199,245,54,.1),rgba(199,245,54,.03));border:1px solid rgba(199,245,54,.25);border-radius:16px;padding:14px 18px;margin-bottom:18px;">
-            <div style="font-size:22px;">📲</div>
-            <div style="flex:1;min-width:200px;font-size:14px;color:#F3F5EC;">Install Pulse on your phone — one tap from your home screen, works offline.</div>
-            <button onClick="{{ installApp }}" style="padding:10px 18px;border-radius:10px;border:none;background:#C7F536;color:#0C0D0A;font-family:Barlow Condensed;font-weight:800;font-size:14px;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;white-space:nowrap;">Install</button>
-            <button onClick="{{ dismissInstallBanner }}" style="background:transparent;border:none;color:#6b7061;font-size:20px;line-height:1;cursor:pointer;padding:4px 6px;" style-hover="color:#F3F5EC;">×</button>
+          <div style="position:relative;background:linear-gradient(120deg,rgba(199,245,54,.1),rgba(199,245,54,.03));border:1px solid rgba(199,245,54,.25);border-radius:16px;padding:14px 18px;margin-bottom:18px;">
+            <button onClick="{{ dismissInstallBanner }}" style="position:absolute;top:8px;right:8px;background:transparent;border:none;color:#6b7061;font-size:20px;line-height:1;cursor:pointer;padding:6px;" style-hover="color:#F3F5EC;">×</button>
+            <div style="display:flex;align-items:center;gap:12px;padding-right:28px;">
+              <div style="font-size:22px;">📲</div>
+              <div style="flex:1;font-size:14px;color:#F3F5EC;">Install Pulse on your phone — one tap from your home screen, works offline.</div>
+            </div>
+            <button onClick="{{ installApp }}" style="margin-top:12px;width:100%;padding:11px 18px;border-radius:10px;border:none;background:#C7F536;color:#0C0D0A;font-family:Barlow Condensed;font-weight:800;font-size:14px;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;">Install</button>
           </div>
         </sc-if>
 
@@ -337,7 +349,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
 
             <div style="background:#15170F;border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:16px 14px;">
               <div style="color:#9DA391;font-size:11px;text-transform:uppercase;letter-spacing:.14em;margin-bottom:10px;">Today</div>
-              <div style="display:flex;gap:14px;overflow-x:auto;padding-bottom:2px;">
+              <div class="today-scroll" style="display:flex;gap:14px;overflow-x:auto;padding:0 14px 2px 0;">
                 <sc-for list="{{ todayStrip }}" as="t" hint-placeholder-count="4">
                   <button onClick="{{ t.onOpen }}" style="display:flex;flex-direction:column;align-items:center;gap:6px;width:76px;flex-shrink:0;background:transparent;border:none;cursor:pointer;color:#F3F5EC;">
                     <div style="{{ t.avatarStyle }}">{{ t.avatarNode }}</div>
