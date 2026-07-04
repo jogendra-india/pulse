@@ -167,19 +167,20 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
 
             <sc-if value="{{ showSkipSection }}" hint-placeholder-val="{{ false }}">
               <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px 18px;">
+                <div style="color:#6b7061;font-size:11px;text-transform:uppercase;letter-spacing:.14em;margin-bottom:10px;">🎤 Excuse Club</div>
                 <sc-if value="{{ isSkippedToday }}" hint-placeholder-val="{{ false }}">
                   <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">
-                    <div style="color:#9DA391;font-size:14px;">😴 You're marked as resting today — <span style="color:#F3F5EC;">{{ skipReason }}</span></div>
-                    <button onClick="{{ cancelSkipToday }}" style="padding:9px 16px;border-radius:10px;border:1px solid rgba(255,255,255,.14);background:transparent;color:#9DA391;font-size:13px;font-weight:600;cursor:pointer;" style-hover="border-color:#C7F536;color:#F3F5EC;">Cancel</button>
+                    <div style="color:#9DA391;font-size:14px;">🎤 Excuse on record: <span style="color:#F3F5EC;">{{ skipReason }}</span></div>
+                    <button onClick="{{ cancelSkipToday }}" style="padding:9px 16px;border-radius:10px;border:1px solid rgba(255,255,255,.14);background:transparent;color:#9DA391;font-size:13px;font-weight:600;cursor:pointer;" style-hover="border-color:#C7F536;color:#F3F5EC;">Actually, I'm in</button>
                   </div>
                 </sc-if>
                 <sc-if value="{{ !isSkippedToday }}" hint-placeholder-val="{{ true }}">
                   <sc-if value="{{ !skipPromptOpen }}" hint-placeholder-val="{{ true }}">
-                    <button onClick="{{ openSkipPrompt }}" style="background:transparent;border:none;color:#9DA391;font-size:14px;cursor:pointer;padding:0;" style-hover="color:#F3F5EC;">Not training today? Let others know →</button>
+                    <button onClick="{{ openSkipPrompt }}" style="background:transparent;border:none;color:#9DA391;font-size:14px;cursor:pointer;padding:0;" style-hover="color:#F3F5EC;">Skipping today? File your excuse →</button>
                   </sc-if>
                   <sc-if value="{{ skipPromptOpen }}" hint-placeholder-val="{{ false }}">
                     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-                      <input value="{{ skipReasonInput }}" onInput="{{ onSkipReason }}" placeholder="e.g. Traveling, resting a niggle…" style="flex:1;min-width:220px;padding:11px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:#0C0D0A;color:#F3F5EC;font-size:14px;outline:none;" autofocus />
+                      <input value="{{ skipReasonInput }}" onInput="{{ onSkipReason }}" placeholder="What's today's alibi?" style="flex:1;min-width:220px;padding:11px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:#0C0D0A;color:#F3F5EC;font-size:14px;outline:none;" autofocus />
                       <button onClick="{{ submitSkip }}" style="padding:11px 18px;border-radius:10px;border:none;background:#C7F536;color:#0C0D0A;font-weight:700;font-size:14px;cursor:pointer;white-space:nowrap;">{{ submitSkipLabel }}</button>
                       <button onClick="{{ closeSkipPrompt }}" style="background:transparent;border:none;color:#6b7061;font-size:13px;cursor:pointer;">Cancel</button>
                     </div>
@@ -1045,13 +1046,13 @@ class Component extends DCLogic {
   onSkipReason = (e) => this.setState({ skipReasonInput: e.target.value });
   submitSkip = () => {
     const reason = (this.state.skipReasonInput || '').trim();
-    if (!reason) { this.toast('Add a quick reason'); return; }
+    if (!reason) { this.toast('Give us something to work with'); return; }
     if (this.state.savingSkip) return;
     this.setState({ savingSkip: true });
     this.api('/skips/', { method: 'POST', body: JSON.stringify({ user: this.state.meId, date: this.today, reason }) })
       .then(() => {
         this.setState({ savingSkip: false, skipPromptOpen: false, skipReasonInput: '' });
-        this.toast("Marked — you're resting today");
+        this.toast('Excuse filed. Nice try 😏');
         this.refreshAttendance();
       })
       .catch(() => {
@@ -1063,7 +1064,7 @@ class Component extends DCLogic {
     if (!skipId) return;
     this.api('/skips/' + skipId + '/', { method: 'DELETE' })
       .then(() => {
-        this.toast('Skip note cleared');
+        this.toast('Excuse withdrawn — back in the game');
         this.refreshAttendance();
       })
       .catch(() => this.toast('Could not clear that'));
@@ -1117,7 +1118,7 @@ class Component extends DCLogic {
       const st = a ? a.status : 'missing';
       let sub, subColor, ring, opacity;
       if (st === 'logged') { sub = 'Logged ✓'; subColor = '#C7F536'; ring = '#C7F536'; opacity = 1; }
-      else if (st === 'skipped') { sub = a.reason || 'Skipping'; subColor = '#9DA391'; ring = 'rgba(255,255,255,.22)'; opacity = 0.85; }
+      else if (st === 'skipped') { sub = '🎤 ' + (a.reason || 'Skipping'); subColor = '#9DA391'; ring = 'rgba(255,255,255,.22)'; opacity = 0.85; }
       else {
         const t = a ? friendlyTypical(a.typicalTime) : null;
         sub = t ? ('Usually ~' + t) : 'New';
@@ -1349,7 +1350,7 @@ class Component extends DCLogic {
       skipPromptOpen: !!S.skipPromptOpen, skipReasonInput: S.skipReasonInput,
       openSkipPrompt: this.openSkipPrompt, closeSkipPrompt: this.closeSkipPrompt,
       onSkipReason: this.onSkipReason, submitSkip: this.submitSkip,
-      savingSkip: !!S.savingSkip, submitSkipLabel: S.savingSkip ? 'Saving…' : 'Mark as skipping',
+      savingSkip: !!S.savingSkip, submitSkipLabel: S.savingSkip ? 'Filing…' : 'Lock in excuse',
       cancelSkipToday: () => this.cancelSkipToday(mySkip && mySkip.skipId),
       pView, pIsMe, pScore: pB.total, pStreak, pRankLabel: pRank ? '#' + pRank : '—', pGoal, pStats, pBars: barsOf(pB),
       calBlanks, calCells,
