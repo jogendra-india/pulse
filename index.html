@@ -153,6 +153,29 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
               </sc-for>
             </div>
 
+            <sc-if value="{{ showSkipSection }}" hint-placeholder-val="{{ false }}">
+              <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px 18px;">
+                <sc-if value="{{ isSkippedToday }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">
+                    <div style="color:#9DA391;font-size:14px;">😴 You're marked as resting today — <span style="color:#F3F5EC;">{{ skipReason }}</span></div>
+                    <button onClick="{{ cancelSkipToday }}" style="padding:9px 16px;border-radius:10px;border:1px solid rgba(255,255,255,.14);background:transparent;color:#9DA391;font-size:13px;font-weight:600;cursor:pointer;" style-hover="border-color:#C7F536;color:#F3F5EC;">Cancel</button>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ !isSkippedToday }}" hint-placeholder-val="{{ true }}">
+                  <sc-if value="{{ !skipPromptOpen }}" hint-placeholder-val="{{ true }}">
+                    <button onClick="{{ openSkipPrompt }}" style="background:transparent;border:none;color:#9DA391;font-size:14px;cursor:pointer;padding:0;" style-hover="color:#F3F5EC;">Not training today? Let others know →</button>
+                  </sc-if>
+                  <sc-if value="{{ skipPromptOpen }}" hint-placeholder-val="{{ false }}">
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+                      <input value="{{ skipReasonInput }}" onInput="{{ onSkipReason }}" placeholder="e.g. Traveling, resting a niggle…" style="flex:1;min-width:220px;padding:11px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:#0C0D0A;color:#F3F5EC;font-size:14px;outline:none;" autofocus />
+                      <button onClick="{{ submitSkip }}" style="padding:11px 18px;border-radius:10px;border:none;background:#C7F536;color:#0C0D0A;font-weight:700;font-size:14px;cursor:pointer;white-space:nowrap;">{{ submitSkipLabel }}</button>
+                      <button onClick="{{ closeSkipPrompt }}" style="background:transparent;border:none;color:#6b7061;font-size:13px;cursor:pointer;">Cancel</button>
+                    </div>
+                  </sc-if>
+                </sc-if>
+              </div>
+            </sc-if>
+
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px;">
               <div style="background:#15170F;border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:20px;">
                 <div style="display:flex;justify-content:space-between;align-items:baseline;">
@@ -297,6 +320,19 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
                 <div style="color:#9DA391;font-size:11px;text-transform:uppercase;letter-spacing:.14em;margin-top:4px;">Monthly leaderboard</div>
               </div>
               <button onClick="{{ nextMonth }}" style="width:40px;height:40px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:#15170F;color:#F3F5EC;cursor:pointer;font-size:20px;" style-hover="border-color:#C7F536;">›</button>
+            </div>
+
+            <div style="background:#15170F;border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:16px 14px;">
+              <div style="color:#9DA391;font-size:11px;text-transform:uppercase;letter-spacing:.14em;margin-bottom:10px;">Today</div>
+              <div style="display:flex;gap:14px;overflow-x:auto;padding-bottom:2px;">
+                <sc-for list="{{ todayStrip }}" as="t" hint-placeholder-count="4">
+                  <button onClick="{{ t.onOpen }}" style="display:flex;flex-direction:column;align-items:center;gap:6px;width:76px;flex-shrink:0;background:transparent;border:none;cursor:pointer;color:#F3F5EC;">
+                    <div style="{{ t.avatarStyle }}">{{ t.avatarNode }}</div>
+                    <div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:74px;">{{ t.name }}</div>
+                    <div style="{{ t.subStyle }}">{{ t.sub }}</div>
+                  </button>
+                </sc-for>
+              </div>
             </div>
 
             <div style="display:flex;align-items:flex-end;justify-content:center;gap:10px;">
@@ -560,6 +596,7 @@ class Component extends DCLogic {
     photoLightboxUrl: null,
     typeOptions: ['Running', 'Cycling', 'Gym / Weights', 'Yoga', 'Swimming', 'Walking', 'HIIT', 'Sports'],
     toast: null,
+    attendance: [], skipPromptOpen: false, skipReasonInput: '', savingSkip: false,
   };
 
   componentDidMount() {
@@ -609,18 +646,29 @@ class Component extends DCLogic {
   // Backend-down fallback: reuse the last successful fetch (cached separately
   // from the small meId/typeOptions blob so a stale-data read never clobbers
   // "who am I on this device") instead of dumping the athlete back to onboarding.
+  // Maps a raw /attendance/ row to the shape the rest of the app uses.
+  mapAttendance(row) {
+    return {
+      userId: row.user.id, status: row.status,
+      reason: row.reason || null, skipId: row.skip_id || null,
+      typicalTime: row.typical_time || null,
+    };
+  }
+
   async loadAll(meId, authToken) {
     try {
-      const [usersResp, entriesResp] = await Promise.all([
+      const [usersResp, entriesResp, attendanceResp] = await Promise.all([
         this.api('/users/?limit=500'),
         this.api('/entries/?limit=2000'),
+        this.api('/attendance/'),
       ]);
       const users = (usersResp.results || []).map(u => ({ id: u.id, name: u.name, goal: u.goal, avatar: u.avatar || null, avatarFocalX: u.avatar_focal_x ?? 50, avatarFocalY: u.avatar_focal_y ?? 50, avatarZoom: u.avatar_zoom ?? 100, createdAt: u.created_at }));
       const entries = (entriesResp.results || []).map(e => ({ id: e.id, userId: e.user, date: e.date, minutes: e.minutes, type: e.type, notes: e.notes || '', photo: e.photo || null, startTime: e.start_time || null, createdAt: e.created_at }));
-      try { localStorage.setItem(this.KEY + '.cache', JSON.stringify({ users, entries, syncedAt: Date.now() })); } catch (e) {}
+      const attendance = (attendanceResp.results || []).map(r => this.mapAttendance(r));
+      try { localStorage.setItem(this.KEY + '.cache', JSON.stringify({ users, entries, attendance, syncedAt: Date.now() })); } catch (e) {}
       const valid = meId && authToken && users.some(u => u.id === meId);
       this.setState({
-        ready: true, users, entries, offline: false,
+        ready: true, users, entries, attendance, offline: false,
         meId: valid ? meId : null,
         authToken: valid ? authToken : null,
         view: valid ? 'app' : 'onboarding',
@@ -631,9 +679,10 @@ class Component extends DCLogic {
       try { cached = JSON.parse(localStorage.getItem(this.KEY + '.cache') || 'null'); } catch (err) {}
       const users = (cached && cached.users) || [];
       const entries = (cached && cached.entries) || [];
+      const attendance = (cached && cached.attendance) || [];
       const valid = meId && authToken && users.some(u => u.id === meId);
       this.setState({
-        ready: true, users, entries, offline: true,
+        ready: true, users, entries, attendance, offline: true,
         meId: valid ? meId : null,
         authToken: valid ? authToken : null,
         view: valid ? 'app' : 'onboarding',
@@ -641,6 +690,22 @@ class Component extends DCLogic {
       });
       this.toast(cached ? 'Offline — showing last synced data' : 'Could not reach Pulse server');
     }
+  }
+
+  // Re-pulls just attendance after a skip is set/cancelled — cheaper than a
+  // full loadAll(), and keeps the cached snapshot used for offline fallback
+  // in sync too.
+  refreshAttendance() {
+    this.api('/attendance/')
+      .then(resp => {
+        const attendance = (resp.results || []).map(r => this.mapAttendance(r));
+        this.setState({ attendance });
+        try {
+          const cached = JSON.parse(localStorage.getItem(this.KEY + '.cache') || 'null') || {};
+          localStorage.setItem(this.KEY + '.cache', JSON.stringify({ ...cached, attendance, syncedAt: Date.now() }));
+        } catch (e) {}
+      })
+      .catch(() => {});
   }
 
   save() {
@@ -917,12 +982,41 @@ class Component extends DCLogic {
       })
       .catch(() => this.toast('Could not update goal'));
   };
+  openSkipPrompt = () => this.setState({ skipPromptOpen: true, skipReasonInput: '' });
+  closeSkipPrompt = () => this.setState({ skipPromptOpen: false, skipReasonInput: '' });
+  onSkipReason = (e) => this.setState({ skipReasonInput: e.target.value });
+  submitSkip = () => {
+    const reason = (this.state.skipReasonInput || '').trim();
+    if (!reason) { this.toast('Add a quick reason'); return; }
+    if (this.state.savingSkip) return;
+    this.setState({ savingSkip: true });
+    this.api('/skips/', { method: 'POST', body: JSON.stringify({ user: this.state.meId, date: this.today, reason }) })
+      .then(() => {
+        this.setState({ savingSkip: false, skipPromptOpen: false, skipReasonInput: '' });
+        this.toast("Marked — you're resting today");
+        this.refreshAttendance();
+      })
+      .catch(() => {
+        this.setState({ savingSkip: false });
+        this.toast('Could not save that');
+      });
+  };
+  cancelSkipToday = (skipId) => {
+    if (!skipId) return;
+    this.api('/skips/' + skipId + '/', { method: 'DELETE' })
+      .then(() => {
+        this.toast('Skip note cleared');
+        this.refreshAttendance();
+      })
+      .catch(() => this.toast('Could not clear that'));
+  };
 
   renderVals() {
     const S = this.state;
     if (!S.ready) return { notReady: true, showOnboarding: false, showApp: false, hasUsers: false,
       existingUsers: [], nameInput: '', goalInput: 150, toast: null, navTabs: [], statCards: [], meBars: [],
-      recent: [], typeChips: [], minChips: [], todayEntries: [], boardRest: [], calCells: [], calBlanks: [], groupedDays: [], pStats: [] };
+      recent: [], typeChips: [], minChips: [], todayEntries: [], boardRest: [], calCells: [], calBlanks: [], groupedDays: [], pStats: [],
+      todayStrip: [], showSkipSection: false, isSkippedToday: false, skipPromptOpen: false, skipReasonInput: '' };
 
     const now = new Date(); const nowMK = this.monthKeyOf(now); const mk = S.monthKey || nowMK;
     const uv = (u) => {
@@ -947,6 +1041,39 @@ class Component extends DCLogic {
 
     const p1 = rows[0] || null, p2 = rows[1] || null, p3 = rows[2] || null;
     const boardRest = rows.slice(3);
+
+    // ---- today's attendance strip ----
+    const attendanceByUser = {};
+    (S.attendance || []).forEach(a => { attendanceByUser[a.userId] = a; });
+    const friendlyTypical = (hhmm) => {
+      if (!hhmm) return null;
+      const p = hhmm.split(':').map(Number);
+      const d = new Date(); d.setHours(p[0], p[1], 0, 0);
+      return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    };
+    const todayStrip = S.users.map(u => {
+      const v = uv(u);
+      const a = attendanceByUser[u.id];
+      const st = a ? a.status : 'missing';
+      let sub, subColor, ring, opacity;
+      if (st === 'logged') { sub = 'Logged ✓'; subColor = '#C7F536'; ring = '#C7F536'; opacity = 1; }
+      else if (st === 'skipped') { sub = a.reason || 'Skipping'; subColor = '#9DA391'; ring = 'rgba(255,255,255,.22)'; opacity = 0.85; }
+      else {
+        const t = a ? friendlyTypical(a.typicalTime) : null;
+        sub = t ? ('Usually ~' + t) : 'New';
+        subColor = '#6b7061'; ring = 'rgba(255,255,255,.1)'; opacity = 0.45;
+      }
+      return {
+        id: u.id, name: (u.name || '').split(' ')[0], avatarNode: v.avatarNode,
+        avatarStyle: 'width:52px;height:52px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:19px;color:#0C0D0A;background:' + v.color + ';border:2px solid ' + ring + ';opacity:' + opacity + ';overflow:hidden;',
+        subStyle: 'font-size:10px;line-height:1.25;color:' + subColor + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:72px;',
+        sub, onOpen: () => this.openProfile(u.id),
+      };
+    });
+
+    const mySkip = attendanceByUser[S.meId] || null;
+    const showSkipSection = !!mySkip && mySkip.status !== 'logged';
+    const isSkippedToday = !!mySkip && mySkip.status === 'skipped';
 
     const meUser = S.users.find(u => u.id === S.meId) || null;
     const me = meUser ? uv(meUser) : { name: '', initials: '', color: '#C7F536' };
@@ -1145,6 +1272,14 @@ class Component extends DCLogic {
       form: S.form, typeChips, minChips,
       todayEntries: todayList, todayTotal, hasToday: todayList.length > 0, noToday: todayList.length === 0,
       p1, p2, p3, boardRest, hasRest: boardRest.length > 0,
+      todayStrip,
+      showSkipSection, isSkippedToday,
+      skipReason: mySkip ? mySkip.reason : '',
+      skipPromptOpen: !!S.skipPromptOpen, skipReasonInput: S.skipReasonInput,
+      openSkipPrompt: this.openSkipPrompt, closeSkipPrompt: this.closeSkipPrompt,
+      onSkipReason: this.onSkipReason, submitSkip: this.submitSkip,
+      savingSkip: !!S.savingSkip, submitSkipLabel: S.savingSkip ? 'Saving…' : 'Mark as skipping',
+      cancelSkipToday: () => this.cancelSkipToday(mySkip && mySkip.skipId),
       pView, pIsMe, pScore: pB.total, pStreak, pRankLabel: pRank ? '#' + pRank : '—', pGoal, pStats, pBars: barsOf(pB),
       calBlanks, calCells,
       groupedDays, hasHistory: groupedDays.length > 0, noHistory: groupedDays.length === 0,
