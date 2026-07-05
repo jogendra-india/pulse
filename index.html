@@ -768,7 +768,11 @@ class Component extends DCLogic {
         err.detail = detail;
         throw err;
       }
-      return res.status === 204 ? null : res.json();
+      // Tolerate empty bodies on any success status (e.g. the push-subscribe
+      // endpoint replies 201 with no body) — res.json() would throw on "".
+      if (res.status === 204) return null;
+      const text = await res.text();
+      return text ? JSON.parse(text) : null;
     } finally {
       clearTimeout(t);
     }
