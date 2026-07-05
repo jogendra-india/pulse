@@ -155,6 +155,17 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
           </div>
         </sc-if>
 
+        <sc-if value="{{ showPushBanner }}" hint-placeholder-val="{{ false }}">
+          <div style="position:relative;background:linear-gradient(120deg,rgba(199,245,54,.1),rgba(199,245,54,.03));border:1px solid rgba(199,245,54,.25);border-radius:16px;padding:14px 18px;margin-bottom:18px;">
+            <button onClick="{{ dismissPushBanner }}" style="position:absolute;top:8px;right:8px;background:transparent;border:none;color:#6b7061;font-size:20px;line-height:1;cursor:pointer;padding:6px;" style-hover="color:#F3F5EC;">×</button>
+            <div style="display:flex;align-items:center;gap:12px;padding-right:28px;">
+              <div style="font-size:22px;">🔔</div>
+              <div style="flex:1;font-size:14px;color:#F3F5EC;">Get a nudge around your usual workout time — log it or file your excuse. We only ping you if you haven't already.</div>
+            </div>
+            <button onClick="{{ enablePush }}" style="margin-top:12px;width:100%;padding:11px 18px;border-radius:10px;border:none;background:#C7F536;color:#0C0D0A;font-family:Barlow Condensed;font-weight:800;font-size:14px;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;">{{ enablePushLabel }}</button>
+          </div>
+        </sc-if>
+
         <!-- HOME -->
         <sc-if value="{{ isHome }}" hint-placeholder-val="{{ false }}">
           <div style="display:flex;flex-direction:column;gap:18px;animation:flbpop .3s ease;">
@@ -626,6 +637,7 @@ class Component extends DCLogic {
     attendance: [], skipPromptOpen: false, skipReasonInput: '', savingSkip: false,
     creatingUser: false,
     canInstall: false, installBannerDismissed: false,
+    pushSupported: false, pushEnabled: false, pushBannerDismissed: false, enablingPush: false,
   };
 
   componentDidMount() {
@@ -657,6 +669,20 @@ class Component extends DCLogic {
       this._installPromptEvent = null;
       this.setState({ canInstall: false });
     });
+
+    // Web push reminders. Only offer them where the browser actually supports
+    // it (and, on iOS, only inside an installed PWA — Safari gates push on
+    // display-mode standalone). If a subscription already exists, treat it as
+    // enabled so we don't nag.
+    const pushSupported = 'serviceWorker' in navigator
+      && 'PushManager' in window && 'Notification' in window;
+    this.setState({ pushSupported });
+    if (pushSupported) {
+      navigator.serviceWorker.ready
+        .then((reg) => reg.pushManager.getSubscription())
+        .then((sub) => { if (sub) this.setState({ pushEnabled: true }); })
+        .catch(() => {});
+    }
   }
 
   installApp = () => {
@@ -669,6 +695,47 @@ class Component extends DCLogic {
     });
   };
   dismissInstallBanner = () => this.setState({ installBannerDismissed: true });
+
+  _urlBase64ToUint8Array(base64) {
+    // VAPID keys arrive URL-safe base64; PushManager wants a raw Uint8Array.
+    const padding = '='.repeat((4 - (base64.length % 4)) % 4);
+    const normal = (base64 + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw = atob(normal);
+    const out = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+  }
+  enablePush = async () => {
+    if (this.state.enablingPush || !this.state.meId) return;
+    this.setState({ enablingPush: true });
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        this.setState({ enablingPush: false });
+        this.toast(permission === 'denied'
+          ? 'Notifications are blocked — enable them in browser settings'
+          : 'No worries — you can enable reminders later');
+        return;
+      }
+      const reg = await navigator.serviceWorker.ready;
+      const { key } = await this.api('/push/vapid-key/');
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: this._urlBase64ToUint8Array(key),
+      });
+      const json = sub.toJSON();
+      await this.api('/push/subscribe/', {
+        method: 'POST',
+        body: JSON.stringify({ user: this.state.meId, endpoint: json.endpoint, keys: json.keys }),
+      });
+      this.setState({ pushEnabled: true, enablingPush: false });
+      this.toast("🔔 You're in — we'll nudge you around your usual time");
+    } catch (e) {
+      this.setState({ enablingPush: false });
+      this.toast('Could not enable reminders');
+    }
+  };
+  dismissPushBanner = () => this.setState({ pushBannerDismissed: true });
 
   async api(path, options = {}, timeoutMs = 5000) {
     const ctrl = new AbortController();
@@ -1090,7 +1157,7 @@ class Component extends DCLogic {
       existingUsers: [], nameInput: '', goalInput: 150, toast: null, navTabs: [], statCards: [], meBars: [],
       recent: [], typeChips: [], minChips: [], todayEntries: [], boardRest: [], calCells: [], calBlanks: [], groupedDays: [], pStats: [],
       todayStrip: [], showSkipSection: false, isSkippedToday: false, skipPromptOpen: false, skipReasonInput: '',
-      showInstallBanner: false };
+      showInstallBanner: false, showPushBanner: false };
 
     const now = new Date(); const nowMK = this.monthKeyOf(now); const mk = S.monthKey || nowMK;
     const uv = (u) => {
@@ -1337,6 +1404,9 @@ class Component extends DCLogic {
       createButtonStyle, createButtonContent, creatingUser: !!S.creatingUser,
       showInstallBanner: !!S.canInstall && !S.installBannerDismissed,
       installApp: this.installApp, dismissInstallBanner: this.dismissInstallBanner,
+      showPushBanner: S.pushSupported && !S.pushEnabled && !S.pushBannerDismissed && !!S.meId,
+      enablePush: this.enablePush, dismissPushBanner: this.dismissPushBanner,
+      enablePushLabel: S.enablingPush ? 'Enabling…' : 'Enable',
       confirmDeleteOpen: !!S.confirmDeleteId,
       cancelDeleteConfirm: this.cancelDeleteConfirm,
       confirmDeleteNow: this.confirmDeleteNow,
