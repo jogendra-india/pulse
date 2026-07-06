@@ -214,6 +214,32 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
               </div>
             </sc-if>
 
+            <sc-if value="{{ showBuddyCard }}" hint-placeholder-val="{{ false }}">
+              <div style="background:linear-gradient(120deg,#1a1726,#15170F);border:1px solid rgba(183,139,255,.25);border-radius:18px;padding:18px 20px;">
+                <div style="color:#B78BFF;font-size:11px;text-transform:uppercase;letter-spacing:.14em;margin-bottom:12px;">Your buddy this month</div>
+                <sc-if value="{{ buddyIsBye }}" hint-placeholder-val="{{ false }}">
+                  <div style="color:#9DA391;font-size:14px;">You're on the bench this month — we'll pair you the moment a new athlete joins. 🪑</div>
+                </sc-if>
+                <sc-if value="{{ !buddyIsBye }}" hint-placeholder-val="{{ true }}">
+                  <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+                    <button onClick="{{ openBuddy }}" style="display:flex;align-items:center;gap:12px;background:transparent;border:none;cursor:pointer;color:#F3F5EC;text-align:left;padding:0;flex:1;min-width:180px;">
+                      <div style="width:48px;height:48px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:20px;color:#0C0D0A;background:{{ buddyColor }};overflow:hidden;flex-shrink:0;">{{ buddyAvatarNode }}</div>
+                      <div style="min-width:0;">
+                        <div style="font-weight:700;font-size:16px;">{{ buddyName }}</div>
+                        <div style="font-size:13px;color:{{ buddyStatusColor }};">{{ buddyStatusLabel }}</div>
+                      </div>
+                    </button>
+                    <sc-if value="{{ buddyPending }}" hint-placeholder-val="{{ true }}">
+                      <button onClick="{{ pokeBuddy }}" style="padding:11px 18px;border-radius:12px;border:none;background:#B78BFF;color:#0C0D0A;font-family:Barlow Condensed;font-weight:800;font-size:16px;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;white-space:nowrap;">{{ pokeLabel }}</button>
+                    </sc-if>
+                  </div>
+                  <sc-if value="{{ buddyStreakShow }}" hint-placeholder-val="{{ false }}">
+                    <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.06);font-size:13px;color:#c9cdbf;">🤝 Buddy streak: <b style="color:#B78BFF;">{{ buddyStreak }}</b> day(s) you both logged in a row.</div>
+                  </sc-if>
+                </sc-if>
+              </div>
+            </sc-if>
+
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px;">
               <div style="background:#15170F;border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:20px;">
                 <div style="display:flex;justify-content:space-between;align-items:baseline;">
@@ -224,7 +250,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
                 <div style="display:flex;flex-direction:column;gap:13px;">
                   <sc-for list="{{ meBars }}" as="b" hint-placeholder-count="4">
                     <div>
-                      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;"><span style="color:#c9cdbf;">{{ b.label }}</span><span style="font-family:Barlow Condensed;font-weight:700;color:{{ b.color }};">+{{ b.value }}</span></div>
+                      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;"><span style="color:#c9cdbf;">{{ b.label }}</span><span style="font-family:Barlow Condensed;font-weight:700;color:{{ b.color }};">{{ b.sign }}{{ b.value }}</span></div>
                       <div style="height:8px;border-radius:999px;background:#0C0D0A;overflow:hidden;"><div style="height:100%;border-radius:999px;width:{{ b.pct }};background:{{ b.color }};"></div></div>
                     </div>
                   </sc-for>
@@ -416,7 +442,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
 
             <div style="background:rgba(199,245,54,.05);border:1px solid rgba(199,245,54,.18);border-radius:16px;padding:18px 20px;">
               <div style="font-family:Barlow Condensed;font-weight:700;font-size:17px;text-transform:uppercase;letter-spacing:.06em;color:#C7F536;margin-bottom:6px;">How points work</div>
-              <div style="color:#b9bdaf;font-size:13px;line-height:1.6;">Score = Activity + Streak + Goals + Variety. Every session earns <b style="color:#F3F5EC;">10 pts + 1/min</b>. A live daily streak adds <b style="color:#F3F5EC;">15 pts × days</b>. Hit your weekly minute goal for <b style="color:#F3F5EC;">+50</b>. Mixing exercise types adds <b style="color:#F3F5EC;">+10 each</b>. Board resets every month.</div>
+              <div style="color:#b9bdaf;font-size:13px;line-height:1.6;">Score = Activity + Streak + Goals + Variety + Buddy. Every session earns <b style="color:#F3F5EC;">10 pts + 1/min</b>. A live daily streak adds <b style="color:#F3F5EC;">15 pts × days</b>. Hit your weekly minute goal for <b style="color:#F3F5EC;">+50</b>. Mixing exercise types adds <b style="color:#F3F5EC;">+10 each</b>. When you and your <b style="color:#B78BFF;">buddy</b> both log a day, you each get a bonus — if either misses, you both take a hit. Board resets every month.</div>
             </div>
           </div>
         </sc-if>
@@ -638,6 +664,7 @@ class Component extends DCLogic {
     creatingUser: false,
     canInstall: false, installBannerDismissed: false,
     pushSupported: false, pushEnabled: false, pushBannerDismissed: false, enablingPush: false,
+    skips: [], buddy: { month: null, config: null, pairs: [] }, poking: false,
   };
 
   componentDidMount() {
@@ -737,6 +764,21 @@ class Component extends DCLogic {
   };
   dismissPushBanner = () => this.setState({ pushBannerDismissed: true });
 
+  pokeBuddy = () => {
+    if (this.state.poking) return;
+    const buddyId = this.buddyOf(this.state.meId);
+    if (!buddyId) return;
+    this.setState({ poking: true });
+    this.api('/buddies/poke/', { method: 'POST', body: JSON.stringify({ to_user: buddyId }) })
+      .then(() => { this.setState({ poking: false }); this.toast('👉 Poke sent!'); })
+      .catch((err) => {
+        this.setState({ poking: false });
+        if (err && err.status === 409) this.toast((err.detail) || 'Nothing to poke about 🎉');
+        else if (err && err.status === 429) this.toast('Easy tiger — poke limit reached');
+        else this.toast('Could not send poke');
+      });
+  };
+
   async api(path, options = {}, timeoutMs = 5000) {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), timeoutMs);
@@ -794,20 +836,34 @@ class Component extends DCLogic {
     };
   }
 
+  mapBuddies(resp) {
+    return {
+      month: (resp && resp.month) || null,
+      config: (resp && resp.config) || null,
+      pairs: ((resp && resp.pairs) || []).map(p => ({
+        userA: p.user_a, userB: p.user_b || null, isBye: !!p.is_bye,
+      })),
+    };
+  }
+
   async loadAll(meId, authToken) {
     try {
-      const [usersResp, entriesResp, attendanceResp] = await Promise.all([
+      const [usersResp, entriesResp, attendanceResp, skipsResp, buddiesResp] = await Promise.all([
         this.api('/users/?limit=500'),
         this.api('/entries/?limit=2000'),
         this.api('/attendance/'),
+        this.api('/skips/?limit=3000'),
+        this.api('/buddies/'),
       ]);
       const users = (usersResp.results || []).map(u => ({ id: u.id, name: u.name, goal: u.goal, avatar: u.avatar || null, avatarFocalX: u.avatar_focal_x ?? 50, avatarFocalY: u.avatar_focal_y ?? 50, avatarZoom: u.avatar_zoom ?? 100, createdAt: u.created_at }));
       const entries = (entriesResp.results || []).map(e => ({ id: e.id, userId: e.user, date: e.date, minutes: e.minutes, type: e.type, notes: e.notes || '', photo: e.photo || null, startTime: e.start_time || null, createdAt: e.created_at }));
       const attendance = (attendanceResp.results || []).map(r => this.mapAttendance(r));
-      try { localStorage.setItem(this.KEY + '.cache', JSON.stringify({ users, entries, attendance, syncedAt: Date.now() })); } catch (e) {}
+      const skips = (skipsResp.results || []).map(s => ({ userId: s.user, date: s.date, reason: s.reason }));
+      const buddy = this.mapBuddies(buddiesResp);
+      try { localStorage.setItem(this.KEY + '.cache', JSON.stringify({ users, entries, attendance, skips, buddy, syncedAt: Date.now() })); } catch (e) {}
       const valid = meId && authToken && users.some(u => u.id === meId);
       this.setState({
-        ready: true, users, entries, attendance, offline: false,
+        ready: true, users, entries, attendance, skips, buddy, offline: false,
         meId: valid ? meId : null,
         authToken: valid ? authToken : null,
         view: valid ? 'app' : 'onboarding',
@@ -819,9 +875,11 @@ class Component extends DCLogic {
       const users = (cached && cached.users) || [];
       const entries = (cached && cached.entries) || [];
       const attendance = (cached && cached.attendance) || [];
+      const skips = (cached && cached.skips) || [];
+      const buddy = (cached && cached.buddy) || { month: null, config: null, pairs: [] };
       const valid = meId && authToken && users.some(u => u.id === meId);
       this.setState({
-        ready: true, users, entries, attendance, offline: true,
+        ready: true, users, entries, attendance, skips, buddy, offline: true,
         meId: valid ? meId : null,
         authToken: valid ? authToken : null,
         view: valid ? 'app' : 'onboarding',
@@ -906,8 +964,60 @@ class Component extends DCLogic {
     es.forEach(e => { const w = this.weekKey(this.parse(e.date)); weeks[w] = (weeks[w] || 0) + (e.minutes || 0); });
     let goals = 0; Object.values(weeks).forEach(m => { if (m >= goal) goals += 50; });
     const variety = new Set(es.map(e => e.type)).size * 10;
-    return { activity, streak, goals, variety, total: activity + streak + goals + variety,
+    const buddy = this.buddyPoints(id, mk);
+    return { activity, streak, goals, variety, buddy,
+      total: activity + streak + goals + variety + buddy,
       minutes: es.reduce((s, e) => s + (e.minutes || 0), 0), sessions: es.length };
+  }
+
+  // The other half of a user's pair for a month (null if unpaired / bye).
+  buddyOf(id) {
+    const pair = (this.state.buddy.pairs || []).find(p => !p.isBye && (p.userA === id || p.userB === id));
+    if (!pair) return null;
+    return pair.userA === id ? pair.userB : pair.userA;
+  }
+  dayStatus(id, ds) {
+    if (this.state.entries.some(e => e.userId === id && e.date === ds)) return 'logged';
+    if (this.state.skips.some(s => s.userId === id && s.date === ds)) return 'excused';
+    return 'missed';
+  }
+  // Buddy bonus/penalty for the *current* month only (we don't load past
+  // months' pairings). Computed from the same entries+skips every client has,
+  // so the board stays consistent. Bonus is live; penalty is retrospective.
+  buddyPoints(id, mk) {
+    const cfg = this.state.buddy.config;
+    if (!cfg || !cfg.enabled || mk !== this.monthKeyOf(new Date())) return 0;
+    const buddyId = this.buddyOf(id);
+    if (!buddyId) return 0;
+    const bonus = cfg.bonus_points, penalty = cfg.penalty_points;
+    const shields = cfg.excuse_shields, modeB = cfg.penalty_mode === 'B';
+    const p = mk.split('-').map(Number), y = p[0], m = p[1];
+    const dim = new Date(y, m, 0).getDate();
+    const todayStr = this.today;
+    let pts = 0;
+    for (let day = 1; day <= dim; day++) {
+      const ds = y + '-' + this.pad(m) + '-' + this.pad(day);
+      if (ds > todayStr) break;
+      const a = this.dayStatus(id, ds), b = this.dayStatus(buddyId, ds);
+      const bothLogged = a === 'logged' && b === 'logged';
+      if (bothLogged) { pts += bonus; continue; }
+      if (ds === todayStr) continue; // day in progress → no penalty yet
+      const aMiss = a === 'missed' || (a === 'excused' && !shields);
+      const bMiss = b === 'missed' || (b === 'excused' && !shields);
+      if (aMiss || bMiss) pts -= modeB ? penalty : (aMiss ? penalty : 0);
+    }
+    return pts;
+  }
+  // Consecutive days (ending today or yesterday) where both buddies logged.
+  buddyStreak(id) {
+    const buddyId = this.buddyOf(id);
+    if (!buddyId) return 0;
+    let d = new Date();
+    const both = (dd) => this.dayStatus(id, this.fmt(dd)) === 'logged' && this.dayStatus(buddyId, this.fmt(dd)) === 'logged';
+    if (!both(d)) { d.setDate(d.getDate() - 1); if (!both(d)) return 0; }
+    let n = 0;
+    while (both(d)) { n++; d.setDate(d.getDate() - 1); }
+    return n;
   }
 
 // ---- toast ----
@@ -1161,7 +1271,8 @@ class Component extends DCLogic {
       existingUsers: [], nameInput: '', goalInput: 150, toast: null, navTabs: [], statCards: [], meBars: [],
       recent: [], typeChips: [], minChips: [], todayEntries: [], boardRest: [], calCells: [], calBlanks: [], groupedDays: [], pStats: [],
       todayStrip: [], showSkipSection: false, isSkippedToday: false, skipPromptOpen: false, skipReasonInput: '',
-      showInstallBanner: false, showPushBanner: false };
+      showInstallBanner: false, showPushBanner: false,
+      showBuddyCard: false, buddyIsBye: false, buddyPending: false, buddyStreakShow: false };
 
     const now = new Date(); const nowMK = this.monthKeyOf(now); const mk = S.monthKey || nowMK;
     const uv = (u) => {
@@ -1221,9 +1332,35 @@ class Component extends DCLogic {
     const showSkipSection = !!mySkip && mySkip.status !== 'logged';
     const isSkippedToday = !!mySkip && mySkip.status === 'skipped';
 
+    // ---- buddy card ----
+    const myPairEntry = (S.buddy.pairs || []).find(p => p.userA === S.meId || p.userB === S.meId);
+    const myBuddyId = this.buddyOf(S.meId);
+    let buddyCard = { present: false };
+    if (myBuddyId) {
+      const bu = S.users.find(u => u.id === myBuddyId);
+      if (bu) {
+        const st = this.dayStatus(myBuddyId, this.today);
+        const statusMap = {
+          logged: { label: 'Logged today ✓', color: '#C7F536', pending: false },
+          excused: { label: 'Excused today 😴', color: '#9DA391', pending: false },
+          missed: { label: "Hasn't logged yet ⏳", color: '#FFB020', pending: true },
+        };
+        const s = statusMap[st];
+        const bstreak = this.buddyStreak(S.meId);
+        buddyCard = {
+          present: true, isBye: false, name: bu.name, avatarNode: uv(bu).avatarNode, color: this.color(bu.name),
+          statusLabel: s.label, statusColor: s.color, pending: s.pending,
+          streak: bstreak, streakShow: bstreak > 0,
+          onOpen: () => this.openProfile(myBuddyId),
+        };
+      }
+    } else if (myPairEntry && myPairEntry.isBye) {
+      buddyCard = { present: true, isBye: true };
+    }
+
     const meUser = S.users.find(u => u.id === S.meId) || null;
     const me = meUser ? uv(meUser) : { name: '', initials: '', color: '#C7F536' };
-    const meB = meUser ? this.scoreBreakdown(S.meId, nowMK) : { activity: 0, streak: 0, goals: 0, variety: 0, total: 0, minutes: 0, sessions: 0 };
+    const meB = meUser ? this.scoreBreakdown(S.meId, nowMK) : { activity: 0, streak: 0, goals: 0, variety: 0, buddy: 0, total: 0, minutes: 0, sessions: 0 };
     const meStreak = meUser ? this.currentStreak(S.meId) : 0;
     const meRow = rows.find(r => r.id === S.meId);
     const meRank = meRow ? meRow.rank : null;
@@ -1250,8 +1387,11 @@ class Component extends DCLogic {
         { label: 'Weekly goals (+50)', value: b.goals, color: '#FFD23F' },
         { label: 'Variety (10/type)', value: b.variety, color: '#4DD4FF' },
       ];
-      const mx = Math.max(1, ...arr.map(x => x.value));
-      arr.forEach(x => x.pct = Math.round(x.value / mx * 100) + '%');
+      // Buddy can be negative (penalties) — only show the bar when there's a
+      // pairing in play, and colour it red when underwater.
+      if (b.buddy) arr.push({ label: 'Buddy bonus', value: b.buddy, color: b.buddy < 0 ? '#FF5C5C' : '#B78BFF' });
+      const mx = Math.max(1, ...arr.map(x => Math.abs(x.value)));
+      arr.forEach(x => { x.pct = Math.round(Math.abs(x.value) / mx * 100) + '%'; x.sign = x.value < 0 ? '' : '+'; });
       return arr;
     };
 
@@ -1411,6 +1551,12 @@ class Component extends DCLogic {
       showPushBanner: S.pushSupported && !S.pushEnabled && !S.pushBannerDismissed && !!S.meId,
       enablePush: this.enablePush, dismissPushBanner: this.dismissPushBanner,
       enablePushLabel: S.enablingPush ? 'Enabling…' : 'Enable',
+      showBuddyCard: buddyCard.present, buddyIsBye: !!buddyCard.isBye,
+      buddyName: buddyCard.name, buddyAvatarNode: buddyCard.avatarNode, buddyColor: buddyCard.color,
+      buddyStatusLabel: buddyCard.statusLabel, buddyStatusColor: buddyCard.statusColor,
+      buddyPending: !!buddyCard.pending, buddyStreak: buddyCard.streak, buddyStreakShow: !!buddyCard.streakShow,
+      openBuddy: buddyCard.onOpen, pokeBuddy: this.pokeBuddy,
+      pokeLabel: S.poking ? 'Poking…' : '👉 Poke',
       confirmDeleteOpen: !!S.confirmDeleteId,
       cancelDeleteConfirm: this.cancelDeleteConfirm,
       confirmDeleteNow: this.confirmDeleteNow,
