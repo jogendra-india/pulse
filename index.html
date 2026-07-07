@@ -221,18 +221,16 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
                   <div style="color:#9DA391;font-size:14px;">You're on the bench this month — we'll pair you the moment a new athlete joins. 🪑</div>
                 </sc-if>
                 <sc-if value="{{ !buddyIsBye }}" hint-placeholder-val="{{ true }}">
-                  <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
-                    <button onClick="{{ openBuddy }}" style="display:flex;align-items:center;gap:12px;background:transparent;border:none;cursor:pointer;color:#F3F5EC;text-align:left;padding:0;flex:1;min-width:180px;">
-                      <div style="width:48px;height:48px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:20px;color:#0C0D0A;background:{{ buddyColor }};overflow:hidden;flex-shrink:0;">{{ buddyAvatarNode }}</div>
-                      <div style="min-width:0;">
-                        <div style="font-weight:700;font-size:16px;">{{ buddyName }}</div>
-                        <div style="font-size:13px;color:{{ buddyStatusColor }};">{{ buddyStatusLabel }}</div>
-                      </div>
-                    </button>
-                    <sc-if value="{{ buddyPending }}" hint-placeholder-val="{{ true }}">
-                      <button onClick="{{ pokeBuddy }}" style="padding:11px 18px;border-radius:12px;border:none;background:#B78BFF;color:#0C0D0A;font-family:Barlow Condensed;font-weight:800;font-size:16px;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;white-space:nowrap;">{{ pokeLabel }}</button>
-                    </sc-if>
-                  </div>
+                  <button onClick="{{ openBuddy }}" style="display:flex;align-items:center;gap:12px;width:100%;background:transparent;border:none;cursor:pointer;color:#F3F5EC;text-align:left;padding:0;">
+                    <div style="width:48px;height:48px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:20px;color:#0C0D0A;background:{{ buddyColor }};overflow:hidden;flex-shrink:0;">{{ buddyAvatarNode }}</div>
+                    <div style="flex:1;min-width:0;">
+                      <div style="font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ buddyName }}</div>
+                      <div style="font-size:13px;color:{{ buddyStatusColor }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ buddyStatusLabel }}</div>
+                    </div>
+                  </button>
+                  <sc-if value="{{ buddyPending }}" hint-placeholder-val="{{ true }}">
+                    <button onClick="{{ pokeBuddy }}" style="margin-top:12px;width:100%;padding:12px;border-radius:12px;border:none;background:#B78BFF;color:#0C0D0A;font-family:Barlow Condensed;font-weight:800;font-size:16px;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;">{{ pokeLabel }}</button>
+                  </sc-if>
                   <sc-if value="{{ buddyStreakShow }}" hint-placeholder-val="{{ false }}">
                     <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.06);font-size:13px;color:#c9cdbf;">🤝 Buddy streak: <b style="color:#B78BFF;">{{ buddyStreak }}</b> day(s) you both logged in a row.</div>
                   </sc-if>
@@ -436,6 +434,25 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
                     <div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:15px;">{{ r.name }}</div><div style="color:#9DA391;font-size:12px;">🔥 {{ r.streak }} · {{ r.minutes }} min · {{ r.sessions }} sessions</div></div>
                     <div style="font-family:Barlow Condensed;font-weight:800;font-size:22px;color:#C7F536;">{{ r.score }}</div>
                   </button>
+                </sc-for>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ hasBuddies }}" hint-placeholder-val="{{ false }}">
+              <div style="background:#15170F;border:1px solid rgba(183,139,255,.2);border-radius:18px;padding:16px 14px;">
+                <div style="color:#B78BFF;font-size:11px;text-transform:uppercase;letter-spacing:.14em;margin:0 4px 10px;">🤝 Buddies this month</div>
+                <sc-for list="{{ boardBuddies }}" as="p" hint-placeholder-count="4">
+                  <div style="{{ p.rowStyle }}">
+                    <button onClick="{{ p.onOpenA }}" style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;background:transparent;border:none;cursor:pointer;color:#F3F5EC;text-align:left;padding:0;">
+                      <div style="width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:14px;color:#0C0D0A;background:{{ p.aColor }};flex-shrink:0;overflow:hidden;">{{ p.aAvatarNode }}</div>
+                      <div style="font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ p.aName }}</div>
+                    </button>
+                    <div style="font-size:15px;flex-shrink:0;color:#B78BFF;">{{ p.link }}</div>
+                    <button onClick="{{ p.onOpenB }}" style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;justify-content:flex-end;background:transparent;border:none;cursor:pointer;color:#F3F5EC;text-align:right;padding:0;">
+                      <div style="font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ p.bName }}</div>
+                      <div style="width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:14px;color:#0C0D0A;background:{{ p.bColor }};flex-shrink:0;overflow:hidden;">{{ p.bAvatarNode }}</div>
+                    </button>
+                  </div>
                 </sc-for>
               </div>
             </sc-if>
@@ -1272,7 +1289,8 @@ class Component extends DCLogic {
       recent: [], typeChips: [], minChips: [], todayEntries: [], boardRest: [], calCells: [], calBlanks: [], groupedDays: [], pStats: [],
       todayStrip: [], showSkipSection: false, isSkippedToday: false, skipPromptOpen: false, skipReasonInput: '',
       showInstallBanner: false, showPushBanner: false,
-      showBuddyCard: false, buddyIsBye: false, buddyPending: false, buddyStreakShow: false };
+      showBuddyCard: false, buddyIsBye: false, buddyPending: false, buddyStreakShow: false,
+      boardBuddies: [], hasBuddies: false };
 
     const now = new Date(); const nowMK = this.monthKeyOf(now); const mk = S.monthKey || nowMK;
     const uv = (u) => {
@@ -1357,6 +1375,23 @@ class Component extends DCLogic {
     } else if (myPairEntry && myPairEntry.isBye) {
       buddyCard = { present: true, isBye: true };
     }
+
+    // ---- board: everyone's buddy pairs ----
+    const chip = (u) => u ? { name: u.name.split(' ')[0], avatarNode: uv(u).avatarNode, color: this.color(u.name), onOpen: () => this.openProfile(u.id) }
+      : { name: 'Waiting…', avatarNode: '🪑', color: '#2a2e20', onOpen: () => {} };
+    const boardBuddies = (S.buddy.pairs || []).map((p, i) => {
+      const ua = S.users.find(u => u.id === p.userA);
+      if (!ua) return null;
+      const ub = p.userB ? S.users.find(u => u.id === p.userB) : null;
+      const isMine = p.userA === S.meId || (!!p.userB && p.userB === S.meId);
+      const a = chip(ua), b = chip(ub);
+      return {
+        key: String(i), isMine, aName: a.name, aAvatarNode: a.avatarNode, aColor: a.color, onOpenA: a.onOpen,
+        bName: b.name, bAvatarNode: b.avatarNode, bColor: b.color, onOpenB: b.onOpen, isBye: !ub,
+        link: p.userB ? '🤝' : '⏳',
+        rowStyle: 'display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;margin-bottom:8px;border:1px solid ' + (isMine ? '#B78BFF' : 'rgba(255,255,255,.05)') + ';background:' + (isMine ? 'rgba(183,139,255,.08)' : 'transparent') + ';',
+      };
+    }).filter(Boolean);
 
     const meUser = S.users.find(u => u.id === S.meId) || null;
     const me = meUser ? uv(meUser) : { name: '', initials: '', color: '#C7F536' };
@@ -1579,6 +1614,7 @@ class Component extends DCLogic {
       form: S.form, typeChips, minChips,
       todayEntries: todayList, todayTotal, hasToday: todayList.length > 0, noToday: todayList.length === 0,
       p1, p2, p3, boardRest, hasRest: boardRest.length > 0,
+      boardBuddies, hasBuddies: boardBuddies.length > 0,
       todayStrip,
       showSkipSection, isSkippedToday,
       skipReason: mySkip ? mySkip.reason : '',
