@@ -598,7 +598,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
         <div style="font-family:Barlow Condensed;font-weight:800;font-size:34px;color:#C7F536;">{{ detailEntry.minutes }} <span style="font-size:14px;color:#9DA391;font-family:Archivo;font-weight:400;">min</span></div>
         <sc-if value="{{ detailEntry.photo }}" hint-placeholder-val="{{ false }}">
           <button onClick="{{ detailEntry.onOpenPhoto }}" style="border:none;padding:0;background:transparent;cursor:zoom-in;border-radius:14px;overflow:hidden;display:block;width:100%;">
-            <img src="{{ detailEntry.photo }}" style="width:100%;max-height:220px;object-fit:cover;display:block;" />
+{{ detailEntry.photoNode }}
           </button>
         </sc-if>
         <sc-if value="{{ detailEntry.notes }}" hint-placeholder-val="{{ false }}">
@@ -610,7 +610,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
 
   <sc-if value="{{ photoLightboxOpen }}" hint-placeholder-val="{{ false }}">
     <div style="position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:70;display:flex;align-items:center;justify-content:center;padding:20px;cursor:zoom-out;" onClick="{{ closePhotoLightbox }}">
-      <img src="{{ photoLightboxUrl }}" style="max-width:100%;max-height:100%;border-radius:12px;object-fit:contain;" />
+{{ lightboxImgNode }}
     </div>
   </sc-if>
 
@@ -1637,9 +1637,11 @@ class Component extends DCLogic {
       minutes: detailSrc.minutes,
       notes: detailSrc.notes,
       photo: detailSrc.photo,
+      photoNode: detailSrc.photo ? React.createElement('img', { src: detailSrc.photo, style: { width: '100%', maxHeight: '220px', objectFit: 'cover', display: 'block' } }) : null,
       whenLabel: this.dLabel(detailSrc.date) + (detailSrc.startTime ? ' · ' + this.timeLabel(detailSrc.startTime) : ''),
       onOpenPhoto: () => this.openPhotoLightbox(detailSrc.photo),
     } : {};
+    const lightboxImgNode = S.photoLightboxUrl ? React.createElement('img', { src: S.photoLightboxUrl, style: { maxWidth: '100%', maxHeight: '100%', borderRadius: '12px', objectFit: 'contain' } }) : null;
 
     // Mirror the backend's backfill cutoff in the picker: today always, plus
     // yesterday only before noon. Editing keeps the entry's own date reachable.
@@ -1732,7 +1734,7 @@ class Component extends DCLogic {
       avatarViewerActionLabel: avatarViewerUser && avatarViewerUser.avatar ? 'Change photo' : 'Add photo',
       closeAvatarViewer: this.closeAvatarViewer,
       logout: this.logout,
-      photoLightboxOpen: !!S.photoLightboxUrl, photoLightboxUrl: S.photoLightboxUrl,
+      photoLightboxOpen: !!S.photoLightboxUrl, lightboxImgNode,
       closePhotoLightbox: this.closePhotoLightbox,
       toggleCustom: this.toggleCustom, addType: this.addType, addEntry: this.addEntry,
       saveGoal: this.saveGoal, prevMonth: this.prevMonth, nextMonth: this.nextMonth,
