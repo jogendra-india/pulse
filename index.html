@@ -742,6 +742,12 @@ class Component extends DCLogic {
       this.setState({ canInstall: false });
     });
 
+    // Coming back to the app (PWA resume, tab refocus) revalidates all data
+    // — the board may have moved while the app was in the background.
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') this.refreshData(true);
+    });
+
     // Web push reminders. Only offer them where the browser actually supports
     // it (and, on iOS, only inside an installed PWA — Safari gates push on
     // display-mode standalone). If a subscription already exists, treat it as
@@ -905,23 +911,47 @@ class Component extends DCLogic {
     };
   }
 
+  // One fetch of everything the app shows, mapped to app shapes and cached.
+  // Used by the initial loadAll AND by every background revalidation.
+  async fetchCore(meId) {
+    const [usersResp, entriesResp, attendanceResp, skipsResp, buddiesResp, insightsResp] = await Promise.all([
+      this.api('/users/?limit=500'),
+      this.api('/entries/?limit=2000'),
+      this.api('/attendance/'),
+      this.api('/skips/?limit=3000'),
+      this.api('/buddies/'),
+      meId ? this.api('/insights/?user=' + meId).catch(() => null) : Promise.resolve(null),
+    ]);
+    const users = (usersResp.results || []).map(u => ({ id: u.id, name: u.name, goal: u.goal, fitnessFocus: u.fitness_focus || 'general', avatar: u.avatar || null, avatarFocalX: u.avatar_focal_x ?? 50, avatarFocalY: u.avatar_focal_y ?? 50, avatarZoom: u.avatar_zoom ?? 100, createdAt: u.created_at }));
+    const entries = (entriesResp.results || []).map(e => ({ id: e.id, userId: e.user, date: e.date, minutes: e.minutes, type: e.type, notes: e.notes || '', photo: e.photo || null, startTime: e.start_time || null, createdAt: e.created_at }));
+    const attendance = (attendanceResp.results || []).map(r => this.mapAttendance(r));
+    const skips = (skipsResp.results || []).map(s => ({ userId: s.user, date: s.date, reason: s.reason }));
+    const buddy = this.mapBuddies(buddiesResp);
+    const insights = { daily: (insightsResp && insightsResp.daily) || null, monthly: (insightsResp && insightsResp.monthly) || null };
+    const data = { users, entries, attendance, skips, buddy, insights };
+    try { localStorage.setItem(this.KEY + '.cache', JSON.stringify({ ...data, syncedAt: Date.now() })); } catch (e) {}
+    return data;
+  }
+
+  // Stale-while-revalidate for app data: refetch everything in the
+  // background, silently keeping what's on screen if the network fails.
+  // Fired on tab switches, app resume (visibilitychange) and after writes;
+  // throttled so rapid tab-hopping doesn't hammer the API.
+  refreshData = (force) => {
+    if (!this.state.ready || this._refreshing) return;
+    const now = Date.now();
+    if (!force && this._lastRefresh && now - this._lastRefresh < 10000) return;
+    this._refreshing = true;
+    this._lastRefresh = now;
+    this.fetchCore(this.state.meId)
+      .then(data => this.setState({ ...data, offline: false }))
+      .catch(() => {})
+      .finally(() => { this._refreshing = false; });
+  };
+
   async loadAll(meId, authToken) {
     try {
-      const [usersResp, entriesResp, attendanceResp, skipsResp, buddiesResp, insightsResp] = await Promise.all([
-        this.api('/users/?limit=500'),
-        this.api('/entries/?limit=2000'),
-        this.api('/attendance/'),
-        this.api('/skips/?limit=3000'),
-        this.api('/buddies/'),
-        meId ? this.api('/insights/?user=' + meId).catch(() => null) : Promise.resolve(null),
-      ]);
-      const users = (usersResp.results || []).map(u => ({ id: u.id, name: u.name, goal: u.goal, fitnessFocus: u.fitness_focus || 'general', avatar: u.avatar || null, avatarFocalX: u.avatar_focal_x ?? 50, avatarFocalY: u.avatar_focal_y ?? 50, avatarZoom: u.avatar_zoom ?? 100, createdAt: u.created_at }));
-      const entries = (entriesResp.results || []).map(e => ({ id: e.id, userId: e.user, date: e.date, minutes: e.minutes, type: e.type, notes: e.notes || '', photo: e.photo || null, startTime: e.start_time || null, createdAt: e.created_at }));
-      const attendance = (attendanceResp.results || []).map(r => this.mapAttendance(r));
-      const skips = (skipsResp.results || []).map(s => ({ userId: s.user, date: s.date, reason: s.reason }));
-      const buddy = this.mapBuddies(buddiesResp);
-      const insights = { daily: (insightsResp && insightsResp.daily) || null, monthly: (insightsResp && insightsResp.monthly) || null };
-      try { localStorage.setItem(this.KEY + '.cache', JSON.stringify({ users, entries, attendance, skips, buddy, insights, syncedAt: Date.now() })); } catch (e) {}
+      const { users, entries, attendance, skips, buddy, insights } = await this.fetchCore(meId);
       const valid = meId && authToken && users.some(u => u.id === meId);
       this.setState({
         ready: true, users, entries, attendance, skips, buddy, insights, offline: false,
@@ -1184,14 +1214,15 @@ class Component extends DCLogic {
   logout = () => this.setState({
     view: 'onboarding', meId: null, authToken: null, profileId: null, avatarViewerUserId: null,
   }, () => this.save());
-  setTab = (t) => this.setState({ tab: t });
-  goLog = () => this.setState({ tab: 'log' });
-  goBoard = () => this.setState({ tab: 'board' });
+  setTab = (t) => { this.setState({ tab: t }); this.refreshData(); };
+  goLog = () => this.setTab('log');
+  goBoard = () => this.setTab('board');
   openMe = () => this.openProfile(this.state.meId);
   openProfile = (id) => {
     const p = { tab: 'profile', profileId: id };
     if (id === this.state.meId) { const u = this.state.users.find(x => x.id === id); if (u) p.goalInput = u.goal || 150; }
     this.setState(p);
+    this.refreshData();
   };
   createUser = () => {
     if (this.state.creatingUser) return;
@@ -1260,6 +1291,8 @@ class Component extends DCLogic {
           entryPhotoFile: null, entryPhotoPreview: null, savingEntry: false,
         });
         this.toast(editingId ? 'Workout updated' : 'Logged ' + min + ' min!');
+        // Revalidate attendance/buddy/board state that this log just changed.
+        this.refreshData(true);
       })
       .catch((err) => {
         this.setState({ savingEntry: false });
@@ -1284,7 +1317,7 @@ class Component extends DCLogic {
   };
   deleteEntry = (id) => {
     this.api('/entries/' + id + '/', { method: 'DELETE' })
-      .then(() => this.setState({ entries: this.state.entries.filter(e => e.id !== id) }))
+      .then(() => { this.setState({ entries: this.state.entries.filter(e => e.id !== id) }); this.refreshData(true); })
       .catch(() => this.toast('Could not delete workout'));
   };
   requestDeleteEntry = (id) => this.setState({ confirmDeleteId: id });
