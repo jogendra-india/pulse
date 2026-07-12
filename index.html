@@ -967,6 +967,23 @@ class Component extends DCLogic {
       .catch(() => {});
   }
 
+  // loadAll only fetches insights when someone was already logged in — after
+  // a fresh login/signup this pulls them so the coach card shows right away
+  // instead of waiting for the next app open.
+  refreshInsights(meId) {
+    if (!meId) return;
+    this.api('/insights/?user=' + meId)
+      .then(resp => {
+        const insights = { daily: (resp && resp.daily) || null, monthly: (resp && resp.monthly) || null };
+        this.setState({ insights });
+        try {
+          const cached = JSON.parse(localStorage.getItem(this.KEY + '.cache') || 'null') || {};
+          localStorage.setItem(this.KEY + '.cache', JSON.stringify({ ...cached, insights, syncedAt: Date.now() }));
+        } catch (e) {}
+      })
+      .catch(() => {});
+  }
+
   save() {
     const { meId, authToken, typeOptions } = this.state;
     try { localStorage.setItem(this.KEY, JSON.stringify({ meId, authToken, typeOptions })); } catch (e) {}
@@ -1157,7 +1174,7 @@ class Component extends DCLogic {
         this.setState({
           meId: u.id, authToken: u.token, view: 'app', tab: 'home', profileId: u.id,
           loginTargetId: null, loginPassword: '',
-        }, () => this.save());
+        }, () => { this.save(); this.refreshInsights(u.id); });
         this.toast('Welcome back, ' + u.name.split(' ')[0] + '!');
       })
       .catch(() => this.toast('Incorrect password'));
@@ -1192,6 +1209,7 @@ class Component extends DCLogic {
         this.update({ users: [...this.state.users, user],
           meId: user.id, authToken: u.token, view: 'app', tab: 'home', profileId: user.id, nameInput: '',
           avatarFile: null, avatarPreview: null, creatingUser: false });
+        this.refreshInsights(user.id);
         this.toast('Welcome, ' + name.split(' ')[0] + '!');
       })
       .catch((err) => {
