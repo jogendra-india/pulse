@@ -238,6 +238,21 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
               </div>
             </sc-if>
 
+            <sc-if value="{{ showAiPlan }}" hint-placeholder-val="{{ false }}">
+              <div style="background:linear-gradient(120deg,#0e1d24,#15170F);border:1px solid rgba(77,212,255,.25);border-radius:18px;padding:18px 20px;">
+                <div style="color:#4DD4FF;font-size:11px;text-transform:uppercase;letter-spacing:.14em;margin-bottom:10px;">🤖 Coach's plan for today</div>
+                <div style="color:#dfe3d7;font-size:14px;line-height:1.65;">{{ aiPlanText }}</div>
+              </div>
+            </sc-if>
+
+            <sc-if value="{{ showAiReview }}" hint-placeholder-val="{{ false }}">
+              <div style="position:relative;background:linear-gradient(120deg,#211d10,#15170F);border:1px solid rgba(255,210,63,.25);border-radius:18px;padding:18px 20px;">
+                <button onClick="{{ dismissReview }}" style="position:absolute;top:8px;right:8px;background:transparent;border:none;color:#6b7061;font-size:20px;line-height:1;cursor:pointer;padding:6px;" style-hover="color:#F3F5EC;">×</button>
+                <div style="color:#FFD23F;font-size:11px;text-transform:uppercase;letter-spacing:.14em;margin-bottom:10px;padding-right:28px;">{{ aiReviewTitle }}</div>
+                <div style="color:#dfe3d7;font-size:14px;line-height:1.65;white-space:pre-wrap;">{{ aiReviewText }}</div>
+              </div>
+            </sc-if>
+
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px;">
               <div style="background:#15170F;border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:20px;">
                 <div style="display:flex;justify-content:space-between;align-items:baseline;">
@@ -496,6 +511,15 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
                 <div><div style="font-family:Barlow Condensed;font-weight:700;font-size:16px;text-transform:uppercase;letter-spacing:.06em;">Weekly goal</div><div style="color:#9DA391;font-size:13px;">Currently {{ pGoal }} min / week</div></div>
                 <div style="display:flex;gap:8px;"><input type="number" value="{{ goalInput }}" onInput="{{ onGoal }}" style="width:110px;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:#0C0D0A;color:#F3F5EC;font-size:16px;outline:none;" /><button onClick="{{ saveGoal }}" style="padding:0 18px;border-radius:10px;border:1px solid #C7F536;background:transparent;color:#C7F536;font-weight:700;cursor:pointer;">Update</button></div>
               </div>
+              <div style="background:#15170F;border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:16px 18px;">
+                <div style="font-family:Barlow Condensed;font-weight:700;font-size:16px;text-transform:uppercase;letter-spacing:.06em;">Fitness focus</div>
+                <div style="color:#9DA391;font-size:13px;margin-bottom:12px;">What you're training for — your AI coach tailors plans to this.</div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                  <sc-for list="{{ focusChips }}" as="fc" hint-placeholder-count="4">
+                    <button onClick="{{ fc.onClick }}" style="{{ fc.style }}">{{ fc.label }}</button>
+                  </sc-for>
+                </div>
+              </div>
             </sc-if>
 
             <div style="background:#15170F;border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:20px;">
@@ -683,6 +707,7 @@ class Component extends DCLogic {
     canInstall: false, installBannerDismissed: false,
     pushSupported: false, pushEnabled: false, pushBannerDismissed: false, enablingPush: false,
     skips: [], buddy: { month: null, config: null, pairs: [] }, poking: false,
+    insights: { daily: null, monthly: null }, reviewSeen: null,
   };
 
   componentDidMount() {
@@ -693,8 +718,10 @@ class Component extends DCLogic {
     const meId = (saved && saved.meId) || null;
     const authToken = (saved && saved.authToken) || null;
     const typeOptions = (saved && saved.typeOptions) || this.state.typeOptions;
+    let reviewSeen = null;
+    try { reviewSeen = localStorage.getItem(this.KEY + '.reviewSeen'); } catch (e) {}
     this.setState({
-      typeOptions,
+      typeOptions, reviewSeen,
       monthKey: this.monthKeyOf(new Date()),
       goalInput: defGoal,
       form: { ...this.state.form, date: this.today, time: this.nowTimeStr() },
@@ -782,6 +809,20 @@ class Component extends DCLogic {
   };
   dismissPushBanner = () => this.setState({ pushBannerDismissed: true });
 
+  dismissReview = () => {
+    const m = this.state.insights.monthly && this.state.insights.monthly.month;
+    if (!m) return;
+    try { localStorage.setItem(this.KEY + '.reviewSeen', m); } catch (e) {}
+    this.setState({ reviewSeen: m });
+  };
+  setFitnessFocus = (f) => {
+    this.api('/users/' + this.state.meId + '/', { method: 'PATCH', body: JSON.stringify({ fitness_focus: f }) })
+      .then(() => {
+        this.setState({ users: this.state.users.map(u => u.id === this.state.meId ? { ...u, fitnessFocus: f } : u) });
+        this.toast('Focus updated — your coach will adjust');
+      })
+      .catch(() => this.toast('Could not update focus'));
+  };
   pokeBuddy = () => {
     if (this.state.poking) return;
     const buddyId = this.buddyOf(this.state.meId);
@@ -866,22 +907,24 @@ class Component extends DCLogic {
 
   async loadAll(meId, authToken) {
     try {
-      const [usersResp, entriesResp, attendanceResp, skipsResp, buddiesResp] = await Promise.all([
+      const [usersResp, entriesResp, attendanceResp, skipsResp, buddiesResp, insightsResp] = await Promise.all([
         this.api('/users/?limit=500'),
         this.api('/entries/?limit=2000'),
         this.api('/attendance/'),
         this.api('/skips/?limit=3000'),
         this.api('/buddies/'),
+        meId ? this.api('/insights/?user=' + meId).catch(() => null) : Promise.resolve(null),
       ]);
-      const users = (usersResp.results || []).map(u => ({ id: u.id, name: u.name, goal: u.goal, avatar: u.avatar || null, avatarFocalX: u.avatar_focal_x ?? 50, avatarFocalY: u.avatar_focal_y ?? 50, avatarZoom: u.avatar_zoom ?? 100, createdAt: u.created_at }));
+      const users = (usersResp.results || []).map(u => ({ id: u.id, name: u.name, goal: u.goal, fitnessFocus: u.fitness_focus || 'general', avatar: u.avatar || null, avatarFocalX: u.avatar_focal_x ?? 50, avatarFocalY: u.avatar_focal_y ?? 50, avatarZoom: u.avatar_zoom ?? 100, createdAt: u.created_at }));
       const entries = (entriesResp.results || []).map(e => ({ id: e.id, userId: e.user, date: e.date, minutes: e.minutes, type: e.type, notes: e.notes || '', photo: e.photo || null, startTime: e.start_time || null, createdAt: e.created_at }));
       const attendance = (attendanceResp.results || []).map(r => this.mapAttendance(r));
       const skips = (skipsResp.results || []).map(s => ({ userId: s.user, date: s.date, reason: s.reason }));
       const buddy = this.mapBuddies(buddiesResp);
-      try { localStorage.setItem(this.KEY + '.cache', JSON.stringify({ users, entries, attendance, skips, buddy, syncedAt: Date.now() })); } catch (e) {}
+      const insights = { daily: (insightsResp && insightsResp.daily) || null, monthly: (insightsResp && insightsResp.monthly) || null };
+      try { localStorage.setItem(this.KEY + '.cache', JSON.stringify({ users, entries, attendance, skips, buddy, insights, syncedAt: Date.now() })); } catch (e) {}
       const valid = meId && authToken && users.some(u => u.id === meId);
       this.setState({
-        ready: true, users, entries, attendance, skips, buddy, offline: false,
+        ready: true, users, entries, attendance, skips, buddy, insights, offline: false,
         meId: valid ? meId : null,
         authToken: valid ? authToken : null,
         view: valid ? 'app' : 'onboarding',
@@ -895,9 +938,10 @@ class Component extends DCLogic {
       const attendance = (cached && cached.attendance) || [];
       const skips = (cached && cached.skips) || [];
       const buddy = (cached && cached.buddy) || { month: null, config: null, pairs: [] };
+      const insights = (cached && cached.insights) || { daily: null, monthly: null };
       const valid = meId && authToken && users.some(u => u.id === meId);
       this.setState({
-        ready: true, users, entries, attendance, skips, buddy, offline: true,
+        ready: true, users, entries, attendance, skips, buddy, insights, offline: true,
         meId: valid ? meId : null,
         authToken: valid ? authToken : null,
         view: valid ? 'app' : 'onboarding',
@@ -1291,7 +1335,8 @@ class Component extends DCLogic {
       todayStrip: [], showSkipSection: false, isSkippedToday: false, skipPromptOpen: false, skipReasonInput: '',
       showInstallBanner: false, showPushBanner: false,
       showBuddyCard: false, buddyIsBye: false, buddyPending: false, buddyStreakShow: false,
-      boardBuddies: [], hasBuddies: false };
+      boardBuddies: [], hasBuddies: false,
+      showAiPlan: false, showAiReview: false, focusChips: [] };
 
     const now = new Date(); const nowMK = this.monthKeyOf(now); const mk = S.monthKey || nowMK;
     const uv = (u) => {
@@ -1377,6 +1422,14 @@ class Component extends DCLogic {
       buddyCard = { present: true, isBye: true };
     }
 
+    // ---- AI coach cards ----
+    const ins = S.insights || {};
+    const showAiPlan = !!(S.meId && ins.daily && ins.daily.date === this.today);
+    const showAiReview = !!(S.meId && ins.monthly) && S.reviewSeen !== ins.monthly.month;
+    const aiPlanText = showAiPlan ? ins.daily.content : '';
+    const aiReviewTitle = showAiReview ? ('📊 ' + ins.monthly.month_label + ' — your review') : '';
+    const aiReviewText = showAiReview ? ins.monthly.content : '';
+
     // ---- board: everyone's buddy pairs ----
     const chip = (u) => u ? { name: u.name.split(' ')[0], avatarNode: uv(u).avatarNode, color: this.color(u.name), onOpen: () => this.openProfile(u.id) }
       : { name: 'Waiting…', avatarNode: '🪑', color: '#2a2e20', onOpen: () => {} };
@@ -1461,6 +1514,11 @@ class Component extends DCLogic {
     const pRank = pRow ? pRow.rank : null;
     const pIsMe = pid === S.meId;
     const pGoal = pUser ? (pUser.goal || 150) : 150;
+    const myFocus = (meUser && meUser.fitnessFocus) || 'general';
+    const chipBase2 = 'padding:9px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.1);cursor:pointer;font-size:14px;font-weight:600;transition:.12s;';
+    const focusChips = [['general', 'General'], ['strength', 'Strength'], ['endurance', 'Endurance'], ['weight_loss', 'Weight loss']]
+      .map(f => ({ label: f[1], onClick: () => this.setFitnessFocus(f[0]),
+        style: chipBase2 + (myFocus === f[0] ? 'background:#4DD4FF;color:#0C0D0A;border-color:#4DD4FF;' : 'background:#0C0D0A;color:#c9cdbf;') }));
     const pStats = [
       { label: 'Score', value: pB.total, accent: '#C7F536' },
       { label: 'Rank', value: pRank ? '#' + pRank : '—', accent: '#FFD23F' },
@@ -1595,6 +1653,8 @@ class Component extends DCLogic {
       showPushBanner: S.pushSupported && !S.pushEnabled && !S.pushBannerDismissed && !!S.meId,
       enablePush: this.enablePush, dismissPushBanner: this.dismissPushBanner,
       enablePushLabel: S.enablingPush ? 'Enabling…' : 'Enable',
+      showAiPlan, aiPlanText, showAiReview, aiReviewTitle, aiReviewText,
+      dismissReview: this.dismissReview, focusChips,
       showBuddyCard: buddyCard.present, buddyIsBye: !!buddyCard.isBye,
       buddyName: buddyCard.name, buddyAvatarNode: buddyCard.avatarNode, buddyColor: buddyCard.color,
       buddyStatusLabel: buddyCard.statusLabel, buddyStatusColor: buddyCard.statusColor,
