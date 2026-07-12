@@ -72,7 +72,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
                 <div style="width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:20px;color:#0C0D0A;background:{{ u.color }};">{{ u.avatarNode }}</div>
                 <div style="flex:1;min-width:0;">
                   <div style="font-weight:700;font-size:16px;">{{ u.name }}</div>
-                  <div style="color:#9DA391;font-size:13px;">🔥 {{ u.streak }} day streak · {{ u.score }} pts</div>
+                  <div style="color:#9DA391;font-size:13px;">{{ u.subtitle }}</div>
                 </div>
                 <div style="color:#C7F536;font-family:Barlow Condensed;font-weight:700;font-size:15px;letter-spacing:.06em;text-transform:uppercase;">{{ u.actionLabel }}</div>
               </button>
@@ -720,13 +720,14 @@ class Component extends DCLogic {
     const typeOptions = (saved && saved.typeOptions) || this.state.typeOptions;
     let reviewSeen = null;
     try { reviewSeen = localStorage.getItem(this.KEY + '.reviewSeen'); } catch (e) {}
+    // meId/authToken must be in state BEFORE the first fetch — data reads
+    // now require the token, and api() attaches it from state.
     this.setState({
-      typeOptions, reviewSeen,
+      typeOptions, reviewSeen, meId, authToken,
       monthKey: this.monthKeyOf(new Date()),
       goalInput: defGoal,
       form: { ...this.state.form, date: this.today, time: this.nowTimeStr() },
-    });
-    this.loadAll(meId, authToken);
+    }, () => this.loadAll(meId, authToken));
 
     // Chrome/Edge fire this instead of showing their own install UI when the
     // page is installable — stash it so our own "Install" button can trigger
@@ -913,7 +914,14 @@ class Component extends DCLogic {
 
   // One fetch of everything the app shows, mapped to app shapes and cached.
   // Used by the initial loadAll AND by every background revalidation.
+  // Before login only the athlete list is fetched — every other read now
+  // requires a token server-side.
   async fetchCore(meId) {
+    if (!this.state.authToken) {
+      const usersResp = await this.api('/users/?limit=500');
+      const users = (usersResp.results || []).map(u => ({ id: u.id, name: u.name, goal: u.goal, fitnessFocus: u.fitness_focus || 'general', avatar: u.avatar || null, avatarFocalX: u.avatar_focal_x ?? 50, avatarFocalY: u.avatar_focal_y ?? 50, avatarZoom: u.avatar_zoom ?? 100, createdAt: u.created_at }));
+      return { users, entries: [], attendance: [], skips: [], buddy: { month: null, config: null, pairs: [] }, insights: { daily: null, monthly: null } };
+    }
     const [usersResp, entriesResp, attendanceResp, skipsResp, buddiesResp, insightsResp] = await Promise.all([
       this.api('/users/?limit=500'),
       this.api('/entries/?limit=2000'),
@@ -961,6 +969,19 @@ class Component extends DCLogic {
         profileId: valid ? meId : null,
       });
     } catch (e) {
+      if (e && e.status === 401) {
+        // The saved token is dead (api() already fired forceLogout). Do NOT
+        // resurrect the session from cache — someone could otherwise open the
+        // form, type a workout, and only fail on submit. Land them on the
+        // login screen with a fresh public athlete list instead.
+        this.setState({ ready: true, offline: false, meId: null, authToken: null, view: 'onboarding', profileId: null }, () => {
+          this.save();
+          this.fetchCore(null).then(data => this.setState(data)).catch(() => {});
+        });
+        return;
+      }
+      // Genuinely unreachable server: fall back to the cached snapshot so the
+      // app still opens offline. Writes will fail with a clear toast.
       let cached = null;
       try { cached = JSON.parse(localStorage.getItem(this.KEY + '.cache') || 'null'); } catch (err) {}
       const users = (cached && cached.users) || [];
@@ -992,23 +1013,6 @@ class Component extends DCLogic {
         try {
           const cached = JSON.parse(localStorage.getItem(this.KEY + '.cache') || 'null') || {};
           localStorage.setItem(this.KEY + '.cache', JSON.stringify({ ...cached, attendance, syncedAt: Date.now() }));
-        } catch (e) {}
-      })
-      .catch(() => {});
-  }
-
-  // loadAll only fetches insights when someone was already logged in — after
-  // a fresh login/signup this pulls them so the coach card shows right away
-  // instead of waiting for the next app open.
-  refreshInsights(meId) {
-    if (!meId) return;
-    this.api('/insights/?user=' + meId)
-      .then(resp => {
-        const insights = { daily: (resp && resp.daily) || null, monthly: (resp && resp.monthly) || null };
-        this.setState({ insights });
-        try {
-          const cached = JSON.parse(localStorage.getItem(this.KEY + '.cache') || 'null') || {};
-          localStorage.setItem(this.KEY + '.cache', JSON.stringify({ ...cached, insights, syncedAt: Date.now() }));
         } catch (e) {}
       })
       .catch(() => {});
@@ -1204,7 +1208,7 @@ class Component extends DCLogic {
         this.setState({
           meId: u.id, authToken: u.token, view: 'app', tab: 'home', profileId: u.id,
           loginTargetId: null, loginPassword: '',
-        }, () => { this.save(); this.refreshInsights(u.id); });
+        }, () => { this.save(); this.refreshData(true); });
         this.toast('Welcome back, ' + u.name.split(' ')[0] + '!');
       })
       .catch(() => this.toast('Incorrect password'));
@@ -1237,10 +1241,10 @@ class Component extends DCLogic {
     this.api('/users/', { method: 'POST', body: fd })
       .then(u => {
         const user = { id: u.id, name: u.name, goal: u.goal, avatar: u.avatar || null, avatarFocalX: 50, avatarFocalY: 50, avatarZoom: 100, createdAt: u.created_at };
-        this.update({ users: [...this.state.users, user],
+        this.setState({ users: [...this.state.users, user],
           meId: user.id, authToken: u.token, view: 'app', tab: 'home', profileId: user.id, nameInput: '',
-          avatarFile: null, avatarPreview: null, creatingUser: false });
-        this.refreshInsights(user.id);
+          avatarFile: null, avatarPreview: null, creatingUser: false },
+          () => { this.save(); this.refreshData(true); });
         this.toast('Welcome, ' + name.split(' ')[0] + '!');
       })
       .catch((err) => {
@@ -1614,7 +1618,11 @@ class Component extends DCLogic {
         style: navBase + (S.tab === t[0] ? 'background:#C7F536;color:#0C0D0A;' : 'background:transparent;color:#9DA391;') }));
 
     const existingUsers = S.users.map(u => { const b = this.scoreBreakdown(u.id, nowMK);
-      return { ...uv(u), streak: this.currentStreak(u.id), score: b.total,
+      const streak = this.currentStreak(u.id);
+      return { ...uv(u), streak, score: b.total,
+        // Pre-login the entries aren't loaded (reads need a token), so real
+        // stats aren't available — show a friendly line instead of 0/0.
+        subtitle: S.entries.length ? ('🔥 ' + streak + ' day streak · ' + b.total + ' pts') : 'Tap to log in and see your stats',
         actionLabel: 'Log in →',
         onSelectLogin: () => this.selectLoginTarget(u.id) }; })
       .sort((a, b) => b.score - a.score);
