@@ -216,9 +216,14 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
 
             <sc-if value="{{ showBuddyCard }}" hint-placeholder-val="{{ false }}">
               <div style="background:linear-gradient(120deg,#1a1726,#15170F);border:1px solid rgba(183,139,255,.25);border-radius:18px;padding:18px 20px;">
-                <div style="color:#B78BFF;font-size:11px;text-transform:uppercase;letter-spacing:.14em;margin-bottom:12px;">Your buddy this month</div>
+                <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:12px;">
+                  <div style="color:#B78BFF;font-size:11px;text-transform:uppercase;letter-spacing:.14em;">{{ buddyHeading }}</div>
+                  <sc-if value="{{ buddyShowDaysLeft }}" hint-placeholder-val="{{ true }}">
+                    <div style="color:#6b7061;font-size:11px;white-space:nowrap;flex-shrink:0;">{{ buddyDaysLeft }}</div>
+                  </sc-if>
+                </div>
                 <sc-if value="{{ buddyIsBye }}" hint-placeholder-val="{{ false }}">
-                  <div style="color:#9DA391;font-size:14px;">You're on the bench this month — we'll pair you the moment a new athlete joins. 🪑</div>
+                  <div style="color:#9DA391;font-size:14px;">{{ benchText }}</div>
                 </sc-if>
                 <sc-if value="{{ !buddyIsBye }}" hint-placeholder-val="{{ true }}">
                   <button onClick="{{ openBuddy }}" style="display:flex;align-items:center;gap:12px;width:100%;background:transparent;border:none;cursor:pointer;color:#F3F5EC;text-align:left;padding:0;">
@@ -456,7 +461,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
 
             <sc-if value="{{ hasBuddies }}" hint-placeholder-val="{{ false }}">
               <div style="background:#15170F;border:1px solid rgba(183,139,255,.2);border-radius:18px;padding:16px 14px;">
-                <div style="color:#B78BFF;font-size:11px;text-transform:uppercase;letter-spacing:.14em;margin:0 4px 10px;">🤝 Buddies this month</div>
+                <div style="color:#B78BFF;font-size:11px;text-transform:uppercase;letter-spacing:.14em;margin:0 4px 10px;">{{ boardBuddiesHeading }}</div>
                 <sc-for list="{{ boardBuddies }}" as="p" hint-placeholder-count="4">
                   <div style="{{ p.rowStyle }}">
                     <button onClick="{{ p.onOpenA }}" style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;background:transparent;border:none;cursor:pointer;color:#F3F5EC;text-align:left;padding:0;">
@@ -475,7 +480,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
 
             <div style="background:rgba(199,245,54,.05);border:1px solid rgba(199,245,54,.18);border-radius:16px;padding:18px 20px;">
               <div style="font-family:Barlow Condensed;font-weight:700;font-size:17px;text-transform:uppercase;letter-spacing:.06em;color:#C7F536;margin-bottom:6px;">How points work</div>
-              <div style="color:#b9bdaf;font-size:13px;line-height:1.6;">Score = Activity + Streak + Goals + Variety + Buddy. Every session earns <b style="color:#F3F5EC;">10 pts + 1/min</b>. A live daily streak adds <b style="color:#F3F5EC;">15 pts × days</b>. Hit your weekly minute goal for <b style="color:#F3F5EC;">+50</b>. Mixing exercise types adds <b style="color:#F3F5EC;">+10 each</b>. When you and your <b style="color:#B78BFF;">buddy</b> both log a day, you each get a bonus — if either misses, you both take a hit. Board resets every month.</div>
+              <div style="color:#b9bdaf;font-size:13px;line-height:1.6;">Score = Activity + Streak + Goals + Variety + Buddy. Every session earns <b style="color:#F3F5EC;">10 pts + 1/min</b>. A live daily streak adds <b style="color:#F3F5EC;">15 pts × days</b>. Hit your weekly minute goal for <b style="color:#F3F5EC;">+50</b>. Mixing exercise types adds <b style="color:#F3F5EC;">+10 each</b>. When you and your <b style="color:#B78BFF;">buddy</b> both log a day, you each get a bonus — if either misses, you both take a hit. Buddies are reshuffled <b style="color:#F3F5EC;">every second Monday</b>, pairing whoever's most active with whoever's least. Board resets every month.</div>
             </div>
           </div>
         </sc-if>
@@ -706,7 +711,7 @@ class Component extends DCLogic {
     creatingUser: false,
     canInstall: false, installBannerDismissed: false,
     pushSupported: false, pushEnabled: false, pushBannerDismissed: false, enablingPush: false,
-    skips: [], buddy: { month: null, config: null, pairs: [] }, poking: false,
+    skips: [], buddy: { periodStart: null, periodEnd: null, daysLeft: null, config: null, pairs: [] }, poking: false,
     insights: { daily: null, monthly: null }, reviewSeen: null,
   };
 
@@ -904,7 +909,11 @@ class Component extends DCLogic {
 
   mapBuddies(resp) {
     return {
-      month: (resp && resp.month) || null,
+      // The fortnight this pairing runs for — buddies rotate every other
+      // Monday, so the window is worth showing rather than assuming.
+      periodStart: (resp && resp.period_start) || null,
+      periodEnd: (resp && resp.period_end) || null,
+      daysLeft: (resp && typeof resp.days_left === 'number') ? resp.days_left : null,
       config: (resp && resp.config) || null,
       pairs: ((resp && resp.pairs) || []).map(p => ({
         userA: p.user_a, userB: p.user_b || null, isBye: !!p.is_bye,
@@ -920,7 +929,7 @@ class Component extends DCLogic {
     if (!this.state.authToken) {
       const usersResp = await this.api('/users/?limit=500');
       const users = (usersResp.results || []).map(u => ({ id: u.id, name: u.name, goal: u.goal, fitnessFocus: u.fitness_focus || 'general', avatar: u.avatar || null, avatarFocalX: u.avatar_focal_x ?? 50, avatarFocalY: u.avatar_focal_y ?? 50, avatarZoom: u.avatar_zoom ?? 100, createdAt: u.created_at }));
-      return { users, entries: [], attendance: [], skips: [], buddy: { month: null, config: null, pairs: [] }, insights: { daily: null, monthly: null } };
+      return { users, entries: [], attendance: [], skips: [], buddy: { periodStart: null, periodEnd: null, daysLeft: null, config: null, pairs: [] }, insights: { daily: null, monthly: null } };
     }
     const [usersResp, entriesResp, attendanceResp, skipsResp, buddiesResp, insightsResp] = await Promise.all([
       this.api('/users/?limit=500'),
@@ -988,7 +997,7 @@ class Component extends DCLogic {
       const entries = (cached && cached.entries) || [];
       const attendance = (cached && cached.attendance) || [];
       const skips = (cached && cached.skips) || [];
-      const buddy = (cached && cached.buddy) || { month: null, config: null, pairs: [] };
+      const buddy = (cached && cached.buddy) || { periodStart: null, periodEnd: null, daysLeft: null, config: null, pairs: [] };
       const insights = (cached && cached.insights) || { daily: null, monthly: null };
       const valid = meId && authToken && users.some(u => u.id === meId);
       this.setState({
@@ -1042,6 +1051,21 @@ class Component extends DCLogic {
   monthLabel(mk) { const p = mk.split('-').map(Number); return this.MONTHS[p[1] - 1] + ' ' + p[0]; }
   monShort(mk) { const p = mk.split('-').map(Number); return this.MON[p[1] - 1]; }
   dLabel(s) { const d = this.parse(s); return this.WD[d.getDay()] + ' ' + d.getDate() + ' ' + this.MON[d.getMonth()]; }
+  // The buddy fortnight as "13–26 Jul", or "29 Jun – 12 Jul" when it straddles
+  // two months.
+  periodLabel(a, b) {
+    if (!a || !b) return '';
+    const s = this.parse(a), e = this.parse(b), em = this.MON[e.getMonth()];
+    return s.getMonth() === e.getMonth()
+      ? s.getDate() + '–' + e.getDate() + ' ' + em
+      : s.getDate() + ' ' + this.MON[s.getMonth()] + ' – ' + e.getDate() + ' ' + em;
+  }
+  daysLeftLabel(n) {
+    if (typeof n !== 'number' || n < 0) return '';
+    if (n === 0) return 'rotates tomorrow';
+    if (n === 1) return 'last day together';
+    return n + ' days left';
+  }
   weekKey(d) {
     const t = new Date(d); t.setHours(0, 0, 0, 0);
     t.setDate(t.getDate() + 3 - ((t.getDay() + 6) % 7));
@@ -1097,6 +1121,8 @@ class Component extends DCLogic {
   // Buddy bonus/penalty for the *current* month only (we don't load past
   // months' pairings). Computed from the same entries+skips every client has,
   // so the board stays consistent. Bonus is live; penalty is retrospective.
+  // Only days inside the running fortnight count — you can't be rewarded or
+  // penalised for a day this pair wasn't together.
   buddyPoints(id, mk) {
     const cfg = this.state.buddy.config;
     if (!cfg || !cfg.enabled || mk !== this.monthKeyOf(new Date())) return 0;
@@ -1107,10 +1133,14 @@ class Component extends DCLogic {
     const p = mk.split('-').map(Number), y = p[0], m = p[1];
     const dim = new Date(y, m, 0).getDate();
     const todayStr = this.today;
+    // ISO dates compare correctly as strings, same as the todayStr check.
+    const ps = this.state.buddy.periodStart, pe = this.state.buddy.periodEnd;
     let pts = 0;
     for (let day = 1; day <= dim; day++) {
       const ds = y + '-' + this.pad(m) + '-' + this.pad(day);
       if (ds > todayStr) break;
+      if (ps && ds < ps) continue;
+      if (pe && ds > pe) break;
       const a = this.dayStatus(id, ds), b = this.dayStatus(buddyId, ds);
       const bothLogged = a === 'logged' && b === 'logged';
       if (bothLogged) { pts += bonus; continue; }
@@ -1122,11 +1152,16 @@ class Component extends DCLogic {
     return pts;
   }
   // Consecutive days (ending today or yesterday) where both buddies logged.
+  // Never counts back past the day the pairing started — those days belonged
+  // to a different buddy.
   buddyStreak(id) {
     const buddyId = this.buddyOf(id);
     if (!buddyId) return 0;
     let d = new Date();
-    const both = (dd) => this.dayStatus(id, this.fmt(dd)) === 'logged' && this.dayStatus(buddyId, this.fmt(dd)) === 'logged';
+    const ps = this.state.buddy.periodStart;
+    const both = (dd) => (!ps || this.fmt(dd) >= ps)
+      && this.dayStatus(id, this.fmt(dd)) === 'logged'
+      && this.dayStatus(buddyId, this.fmt(dd)) === 'logged';
     if (!both(d)) { d.setDate(d.getDate() - 1); if (!both(d)) return 0; }
     let n = 0;
     while (both(d)) { n++; d.setDate(d.getDate() - 1); }
@@ -1485,6 +1520,15 @@ class Component extends DCLogic {
     const aiReviewTitle = showAiReview ? ('📊 ' + ins.monthly.month_label + ' — your review') : '';
     const aiReviewText = showAiReview ? ins.monthly.content : '';
 
+    // ---- buddy window: the fortnight the current pairing runs for ----
+    const buddyWindow = this.periodLabel(S.buddy.periodStart, S.buddy.periodEnd);
+    const buddyEnds = S.buddy.periodEnd ? this.dLabel(S.buddy.periodEnd) : '';
+    const buddyHeading = buddyEnds ? 'Your buddy · until ' + buddyEnds : 'Your buddy';
+    const buddyDaysLeft = this.daysLeftLabel(S.buddy.daysLeft);
+    const benchText = buddyEnds
+      ? "You're on the bench until " + buddyEnds + " — we'll pair you the moment a new athlete joins. 🪑"
+      : "You're on the bench — we'll pair you the moment a new athlete joins. 🪑";
+
     // ---- board: everyone's buddy pairs ----
     const chip = (u) => u ? { name: u.name.split(' ')[0], avatarNode: uv(u).avatarNode, color: this.color(u.name), onOpen: () => this.openProfile(u.id) }
       : { name: 'Waiting…', avatarNode: '🪑', color: '#2a2e20', onOpen: () => {} };
@@ -1717,6 +1761,8 @@ class Component extends DCLogic {
       showAiPlan, aiPlanText, showAiReview, aiReviewTitle, aiReviewText,
       dismissReview: this.dismissReview, focusChips,
       showBuddyCard: buddyCard.present, buddyIsBye: !!buddyCard.isBye,
+      buddyHeading, buddyDaysLeft, buddyShowDaysLeft: !!buddyDaysLeft, benchText,
+      boardBuddiesHeading: buddyWindow ? '🤝 Buddies · ' + buddyWindow : '🤝 Buddies',
       buddyName: buddyCard.name, buddyAvatarNode: buddyCard.avatarNode, buddyColor: buddyCard.color,
       buddyStatusLabel: buddyCard.statusLabel, buddyStatusColor: buddyCard.statusColor,
       buddyPending: !!buddyCard.pending, buddyStreak: buddyCard.streak, buddyStreakShow: !!buddyCard.streakShow,
