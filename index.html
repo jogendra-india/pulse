@@ -917,6 +917,9 @@ class Component extends DCLogic {
       config: (resp && resp.config) || null,
       pairs: ((resp && resp.pairs) || []).map(p => ({
         userA: p.user_a, userB: p.user_b || null, isBye: !!p.is_bye,
+        // The day these two were actually put together — mid-cycle for a
+        // newcomer who filled the bench seat. Buddy points start here.
+        pairedSince: p.paired_since || null,
       })),
     };
   }
@@ -1102,16 +1105,41 @@ class Component extends DCLogic {
     let goals = 0; Object.values(weeks).forEach(m => { if (m >= goal) goals += 50; });
     const variety = new Set(es.map(e => e.type)).size * 10;
     const buddy = this.buddyPoints(id, mk);
+    // The board never goes below zero: a run of buddy penalties shouldn't put
+    // anyone in the red, and a negative score reads as a punishment rather
+    // than "nothing logged yet".
     return { activity, streak, goals, variety, buddy,
-      total: activity + streak + goals + variety + buddy,
+      total: Math.max(0, activity + streak + goals + variety + buddy),
       minutes: es.reduce((s, e) => s + (e.minutes || 0), 0), sessions: es.length };
   }
 
-  // The other half of a user's pair for a month (null if unpaired / bye).
+  // The user's pair for the running cycle (null if unpaired / on the bench).
+  pairOf(id) {
+    return (this.state.buddy.pairs || []).find(p => !p.isBye && (p.userA === id || p.userB === id)) || null;
+  }
+  // The other half of that pair.
   buddyOf(id) {
-    const pair = (this.state.buddy.pairs || []).find(p => !p.isBye && (p.userA === id || p.userB === id));
+    const pair = this.pairOf(id);
     if (!pair) return null;
     return pair.userA === id ? pair.userB : pair.userA;
+  }
+  // First day a pairing can be scored: when the two were put together, and
+  // never before either of them signed up. Someone who joins mid-cycle and
+  // fills the bench seat would otherwise open with a fortnight of penalties
+  // for days they had no account.
+  buddyScoredFrom(id, buddyId) {
+    const pair = this.pairOf(id);
+    const joined = (uid) => {
+      const u = this.state.users.find(x => x.id === uid);
+      return u && u.createdAt ? u.createdAt.slice(0, 10) : null;
+    };
+    const days = [
+      this.state.buddy.periodStart,
+      pair && pair.pairedSince,
+      joined(id),
+      joined(buddyId),
+    ].filter(Boolean);
+    return days.length ? days.reduce((a, b) => (a > b ? a : b)) : null;
   }
   dayStatus(id, ds) {
     if (this.state.entries.some(e => e.userId === id && e.date === ds)) return 'logged';
@@ -1121,8 +1149,7 @@ class Component extends DCLogic {
   // Buddy bonus/penalty for the *current* month only (we don't load past
   // months' pairings). Computed from the same entries+skips every client has,
   // so the board stays consistent. Bonus is live; penalty is retrospective.
-  // Only days inside the running fortnight count — you can't be rewarded or
-  // penalised for a day this pair wasn't together.
+  // Only days the pair was actually together count — see buddyScoredFrom.
   buddyPoints(id, mk) {
     const cfg = this.state.buddy.config;
     if (!cfg || !cfg.enabled || mk !== this.monthKeyOf(new Date())) return 0;
@@ -1134,7 +1161,7 @@ class Component extends DCLogic {
     const dim = new Date(y, m, 0).getDate();
     const todayStr = this.today;
     // ISO dates compare correctly as strings, same as the todayStr check.
-    const ps = this.state.buddy.periodStart, pe = this.state.buddy.periodEnd;
+    const ps = this.buddyScoredFrom(id, buddyId), pe = this.state.buddy.periodEnd;
     let pts = 0;
     for (let day = 1; day <= dim; day++) {
       const ds = y + '-' + this.pad(m) + '-' + this.pad(day);
@@ -1158,7 +1185,7 @@ class Component extends DCLogic {
     const buddyId = this.buddyOf(id);
     if (!buddyId) return 0;
     let d = new Date();
-    const ps = this.state.buddy.periodStart;
+    const ps = this.buddyScoredFrom(id, buddyId);
     const both = (dd) => (!ps || this.fmt(dd) >= ps)
       && this.dayStatus(id, this.fmt(dd)) === 'logged'
       && this.dayStatus(buddyId, this.fmt(dd)) === 'logged';
