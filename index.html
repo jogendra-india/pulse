@@ -1168,6 +1168,13 @@ class Component extends DCLogic {
     const p = mk.split('-').map(Number), y = p[0], m = p[1];
     const dim = new Date(y, m, 0).getDate();
     const todayStr = this.today;
+    // Entries for a day stay loggable until noon the day after (the backfill
+    // cutoff) — so yesterday isn't a settled day until 12:00 today, and
+    // penalising it earlier would punish a buddy who can still log it.
+    const nowD = new Date();
+    const yD = new Date(nowD); yD.setDate(yD.getDate() - 1);
+    const yesterdayStr = this.fmt(yD);
+    const yesterdayStillOpen = nowD.getHours() < 12;
     const joined = (uid) => {
       const u = this.state.users.find(x => x.id === uid);
       return u && u.createdAt ? u.createdAt.slice(0, 10) : null;
@@ -1197,6 +1204,7 @@ class Component extends DCLogic {
         const bothLogged = a === 'logged' && b === 'logged';
         if (bothLogged) { pts += bonus; continue; }
         if (ds === todayStr) continue; // day in progress → no penalty yet
+        if (ds === yesterdayStr && yesterdayStillOpen) continue; // backfill window open
         const aMiss = a === 'missed' || (a === 'excused' && !shields);
         const bMiss = b === 'missed' || (b === 'excused' && !shields);
         if (aMiss || bMiss) pts -= modeB ? penalty : (aMiss ? penalty : 0);
