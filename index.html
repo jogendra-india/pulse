@@ -711,7 +711,7 @@ class Component extends DCLogic {
     creatingUser: false,
     canInstall: false, installBannerDismissed: false,
     pushSupported: false, pushEnabled: false, pushBannerDismissed: false, enablingPush: false,
-    skips: [], buddy: { periodStart: null, periodEnd: null, daysLeft: null, config: null, pairs: [] }, poking: false,
+    skips: [], buddy: { periodStart: null, periodEnd: null, daysLeft: null, config: null, pairs: [], monthCycles: [] }, poking: false,
     insights: { daily: null, monthly: null }, reviewSeen: null,
   };
 
@@ -908,6 +908,12 @@ class Component extends DCLogic {
   }
 
   mapBuddies(resp) {
+    const mapPair = (p) => ({
+      userA: p.user_a, userB: p.user_b || null, isBye: !!p.is_bye,
+      // The day these two were actually put together — mid-cycle for a
+      // newcomer who filled the bench seat. Buddy points start here.
+      pairedSince: p.paired_since || null,
+    });
     return {
       // The fortnight this pairing runs for — buddies rotate every other
       // Monday, so the window is worth showing rather than assuming.
@@ -915,11 +921,13 @@ class Component extends DCLogic {
       periodEnd: (resp && resp.period_end) || null,
       daysLeft: (resp && typeof resp.days_left === 'number') ? resp.days_left : null,
       config: (resp && resp.config) || null,
-      pairs: ((resp && resp.pairs) || []).map(p => ({
-        userA: p.user_a, userB: p.user_b || null, isBye: !!p.is_bye,
-        // The day these two were actually put together — mid-cycle for a
-        // newcomer who filled the bench seat. Buddy points start here.
-        pairedSince: p.paired_since || null,
+      pairs: ((resp && resp.pairs) || []).map(mapPair),
+      // Every fortnight overlapping the current month — the monthly board
+      // scores all of them, not just the running cycle, so rotation day
+      // doesn't wipe the points earned under the previous buddy.
+      monthCycles: ((resp && resp.month_cycles) || []).map(c => ({
+        periodStart: c.period_start, periodEnd: c.period_end,
+        pairs: (c.pairs || []).map(mapPair),
       })),
     };
   }
@@ -932,7 +940,7 @@ class Component extends DCLogic {
     if (!this.state.authToken) {
       const usersResp = await this.api('/users/?limit=500');
       const users = (usersResp.results || []).map(u => ({ id: u.id, name: u.name, goal: u.goal, fitnessFocus: u.fitness_focus || 'general', avatar: u.avatar || null, avatarFocalX: u.avatar_focal_x ?? 50, avatarFocalY: u.avatar_focal_y ?? 50, avatarZoom: u.avatar_zoom ?? 100, createdAt: u.created_at }));
-      return { users, entries: [], attendance: [], skips: [], buddy: { periodStart: null, periodEnd: null, daysLeft: null, config: null, pairs: [] }, insights: { daily: null, monthly: null } };
+      return { users, entries: [], attendance: [], skips: [], buddy: { periodStart: null, periodEnd: null, daysLeft: null, config: null, pairs: [], monthCycles: [] }, insights: { daily: null, monthly: null } };
     }
     const [usersResp, entriesResp, attendanceResp, skipsResp, buddiesResp, insightsResp] = await Promise.all([
       this.api('/users/?limit=500'),
@@ -1000,7 +1008,7 @@ class Component extends DCLogic {
       const entries = (cached && cached.entries) || [];
       const attendance = (cached && cached.attendance) || [];
       const skips = (cached && cached.skips) || [];
-      const buddy = (cached && cached.buddy) || { periodStart: null, periodEnd: null, daysLeft: null, config: null, pairs: [] };
+      const buddy = (cached && cached.buddy) || { periodStart: null, periodEnd: null, daysLeft: null, config: null, pairs: [], monthCycles: [] };
       const insights = (cached && cached.insights) || { daily: null, monthly: null };
       const valid = meId && authToken && users.some(u => u.id === meId);
       this.setState({
@@ -1149,32 +1157,50 @@ class Component extends DCLogic {
   // Buddy bonus/penalty for the *current* month only (we don't load past
   // months' pairings). Computed from the same entries+skips every client has,
   // so the board stays consistent. Bonus is live; penalty is retrospective.
-  // Only days the pair was actually together count — see buddyScoredFrom.
+  // Scores EVERY fortnight overlapping the month — pairings rotate mid-month,
+  // and points earned under the previous cycle's buddy must survive rotation
+  // day on the monthly board. Only days a pair was actually together count.
   buddyPoints(id, mk) {
     const cfg = this.state.buddy.config;
     if (!cfg || !cfg.enabled || mk !== this.monthKeyOf(new Date())) return 0;
-    const buddyId = this.buddyOf(id);
-    if (!buddyId) return 0;
     const bonus = cfg.bonus_points, penalty = cfg.penalty_points;
     const shields = cfg.excuse_shields, modeB = cfg.penalty_mode === 'B';
     const p = mk.split('-').map(Number), y = p[0], m = p[1];
     const dim = new Date(y, m, 0).getDate();
     const todayStr = this.today;
-    // ISO dates compare correctly as strings, same as the todayStr check.
-    const ps = this.buddyScoredFrom(id, buddyId), pe = this.state.buddy.periodEnd;
+    const joined = (uid) => {
+      const u = this.state.users.find(x => x.id === uid);
+      return u && u.createdAt ? u.createdAt.slice(0, 10) : null;
+    };
+    // Older cached payloads may predate month_cycles — fall back to scoring
+    // just the running cycle rather than nothing.
+    let cycles = this.state.buddy.monthCycles || [];
+    if (!cycles.length && (this.state.buddy.pairs || []).length) {
+      cycles = [{ periodStart: this.state.buddy.periodStart, periodEnd: this.state.buddy.periodEnd, pairs: this.state.buddy.pairs }];
+    }
     let pts = 0;
-    for (let day = 1; day <= dim; day++) {
-      const ds = y + '-' + this.pad(m) + '-' + this.pad(day);
-      if (ds > todayStr) break;
-      if (ps && ds < ps) continue;
-      if (pe && ds > pe) break;
-      const a = this.dayStatus(id, ds), b = this.dayStatus(buddyId, ds);
-      const bothLogged = a === 'logged' && b === 'logged';
-      if (bothLogged) { pts += bonus; continue; }
-      if (ds === todayStr) continue; // day in progress → no penalty yet
-      const aMiss = a === 'missed' || (a === 'excused' && !shields);
-      const bMiss = b === 'missed' || (b === 'excused' && !shields);
-      if (aMiss || bMiss) pts -= modeB ? penalty : (aMiss ? penalty : 0);
+    for (const cyc of cycles) {
+      const pair = (cyc.pairs || []).find(x => !x.isBye && (x.userA === id || x.userB === id));
+      if (!pair) continue;
+      const buddyId = pair.userA === id ? pair.userB : pair.userA;
+      // First scorable day of this cycle: when the two were actually put
+      // together, never before either signed up (ISO strings compare fine).
+      const froms = [cyc.periodStart, pair.pairedSince, joined(id), joined(buddyId)].filter(Boolean);
+      const from = froms.length ? froms.reduce((a, b) => (a > b ? a : b)) : null;
+      const to = cyc.periodEnd;
+      for (let day = 1; day <= dim; day++) {
+        const ds = y + '-' + this.pad(m) + '-' + this.pad(day);
+        if (ds > todayStr) break;
+        if (from && ds < from) continue;
+        if (to && ds > to) break;
+        const a = this.dayStatus(id, ds), b = this.dayStatus(buddyId, ds);
+        const bothLogged = a === 'logged' && b === 'logged';
+        if (bothLogged) { pts += bonus; continue; }
+        if (ds === todayStr) continue; // day in progress → no penalty yet
+        const aMiss = a === 'missed' || (a === 'excused' && !shields);
+        const bMiss = b === 'missed' || (b === 'excused' && !shields);
+        if (aMiss || bMiss) pts -= modeB ? penalty : (aMiss ? penalty : 0);
+      }
     }
     return pts;
   }
