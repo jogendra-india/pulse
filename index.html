@@ -452,7 +452,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
               <sc-if value="{{ p2 }}" hint-placeholder-val="{{ false }}">
                 <button onClick="{{ p2.onOpen }}" style="display:flex;flex-direction:column;align-items:center;gap:7px;background:transparent;border:none;cursor:pointer;color:#F3F5EC;width:112px;">
                   <div style="width:56px;height:56px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:23px;color:#0C0D0A;background:{{ p2.color }};border:3px solid #C0C7CF;">{{ p2.avatarNode }}</div>
-                  <div style="font-weight:700;font-size:13px;text-align:center;line-height:1.1;">{{ p2.name }}</div>
+                  <div style="font-weight:700;font-size:13px;text-align:center;line-height:1.1;">{{ p2.name }}<sc-if value="{{ p2.readOnly }}"><span style="color:#FF8A8A;font-size:11px;"> 🔒</span></sc-if></div>
                   <div style="font-family:Barlow Condensed;font-weight:800;font-size:20px;color:#C7F536;">{{ p2.score }}</div>
                   <div style="width:100%;height:96px;border-radius:14px 14px 0 0;background:linear-gradient(#C0C7CF,#7f8790);display:flex;align-items:flex-start;justify-content:center;padding-top:8px;font-family:Barlow Condensed;font-weight:800;font-size:34px;color:#0C0D0A;">2</div>
                 </button>
@@ -461,7 +461,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
                 <button onClick="{{ p1.onOpen }}" style="display:flex;flex-direction:column;align-items:center;gap:7px;background:transparent;border:none;cursor:pointer;color:#F3F5EC;width:124px;">
                   <div style="font-size:22px;line-height:1;">👑</div>
                   <div style="width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:26px;color:#0C0D0A;background:{{ p1.color }};border:3px solid #FFD23F;">{{ p1.avatarNode }}</div>
-                  <div style="font-weight:700;font-size:14px;text-align:center;line-height:1.1;">{{ p1.name }}</div>
+                  <div style="font-weight:700;font-size:14px;text-align:center;line-height:1.1;">{{ p1.name }}<sc-if value="{{ p1.readOnly }}"><span style="color:#FF8A8A;font-size:11px;"> 🔒</span></sc-if></div>
                   <div style="font-family:Barlow Condensed;font-weight:800;font-size:23px;color:#C7F536;">{{ p1.score }}</div>
                   <div style="width:100%;height:128px;border-radius:14px 14px 0 0;background:linear-gradient(#FFD23F,#c99e13);display:flex;align-items:flex-start;justify-content:center;padding-top:9px;font-family:Barlow Condensed;font-weight:800;font-size:42px;color:#0C0D0A;">1</div>
                 </button>
@@ -469,7 +469,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
               <sc-if value="{{ p3 }}" hint-placeholder-val="{{ false }}">
                 <button onClick="{{ p3.onOpen }}" style="display:flex;flex-direction:column;align-items:center;gap:7px;background:transparent;border:none;cursor:pointer;color:#F3F5EC;width:112px;">
                   <div style="width:56px;height:56px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:23px;color:#0C0D0A;background:{{ p3.color }};border:3px solid #E08A4B;">{{ p3.avatarNode }}</div>
-                  <div style="font-weight:700;font-size:13px;text-align:center;line-height:1.1;">{{ p3.name }}</div>
+                  <div style="font-weight:700;font-size:13px;text-align:center;line-height:1.1;">{{ p3.name }}<sc-if value="{{ p3.readOnly }}"><span style="color:#FF8A8A;font-size:11px;"> 🔒</span></sc-if></div>
                   <div style="font-family:Barlow Condensed;font-weight:800;font-size:20px;color:#C7F536;">{{ p3.score }}</div>
                   <div style="width:100%;height:76px;border-radius:14px 14px 0 0;background:linear-gradient(#E08A4B,#a25f2c);display:flex;align-items:flex-start;justify-content:center;padding-top:7px;font-family:Barlow Condensed;font-weight:800;font-size:30px;color:#0C0D0A;">3</div>
                 </button>
@@ -482,7 +482,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
                   <button onClick="{{ r.onOpen }}" style="{{ r.rowStyle }}">
                     <div style="width:26px;text-align:center;font-family:Barlow Condensed;font-weight:800;font-size:19px;color:#9DA391;">{{ r.rank }}</div>
                     <div style="width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:16px;color:#0C0D0A;background:{{ r.color }};flex-shrink:0;">{{ r.avatarNode }}</div>
-                    <div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:15px;">{{ r.name }}</div><div style="color:#9DA391;font-size:12px;">🔥 {{ r.streak }} · {{ r.minutes }} min · {{ r.sessions }} sessions</div></div>
+                    <div style="flex:1;min-width:0;"><div style="display:flex;align-items:center;gap:6px;"><div style="font-weight:700;font-size:15px;">{{ r.name }}</div><sc-if value="{{ r.readOnly }}"><span style="background:rgba(255,92,92,.15);color:#FF8A8A;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 6px;border-radius:5px;flex-shrink:0;">read-only</span></sc-if></div><div style="color:#9DA391;font-size:12px;">🔥 {{ r.streak }} · {{ r.minutes }} min · {{ r.sessions }} sessions</div></div>
                     <div style="font-family:Barlow Condensed;font-weight:800;font-size:22px;color:#C7F536;">{{ r.score }}</div>
                   </button>
                 </sc-for>
@@ -526,11 +526,19 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
                 <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
                   <span style="font-family:Barlow Condensed;font-weight:800;font-size:32px;text-transform:uppercase;letter-spacing:.02em;line-height:1;">{{ pView.name }}</span>
                   <sc-if value="{{ pIsMe }}" hint-placeholder-val="{{ false }}"><span style="background:#C7F536;color:#0C0D0A;font-family:Barlow Condensed;font-weight:800;font-size:12px;letter-spacing:.1em;padding:3px 8px;border-radius:6px;">YOU</span></sc-if>
+                  <sc-if value="{{ pReadOnly }}" hint-placeholder-val="{{ false }}"><span style="background:rgba(255,92,92,.15);color:#FF8A8A;font-family:Barlow Condensed;font-weight:800;font-size:12px;letter-spacing:.08em;padding:3px 8px;border-radius:6px;text-transform:uppercase;">Read-only</span></sc-if>
                 </div>
                 <div style="color:#9DA391;font-size:14px;margin-top:6px;">Rank {{ pRankLabel }} · 🔥 {{ pStreak }} day streak</div>
               </div>
               <div style="text-align:right;"><div style="font-family:Barlow Condensed;font-weight:800;font-size:40px;color:#C7F536;line-height:1;">{{ pScore }}</div><div style="color:#9DA391;font-size:12px;text-transform:uppercase;letter-spacing:.1em;">points · {{ monthLabel }}</div></div>
             </div>
+
+            <sc-if value="{{ pAdminCanAct }}" hint-placeholder-val="{{ false }}">
+              <div style="background:#15170F;border:1px solid rgba(255,138,138,.25);border-radius:16px;padding:16px 18px;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
+                <div><div style="font-family:Barlow Condensed;font-weight:700;font-size:15px;text-transform:uppercase;letter-spacing:.06em;">🛡️ Admin</div><div style="color:#9DA391;font-size:12px;">Manage this athlete's account standing.</div></div>
+                <button onClick="{{ pAdminAction }}" style="{{ pAdminActionStyle }}">{{ pAdminActionLabel }}</button>
+              </div>
+            </sc-if>
 
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;">
               <sc-for list="{{ pStats }}" as="c" hint-placeholder-count="4">
@@ -588,6 +596,26 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
                   </sc-for>
                 </div>
               </div>
+              <sc-if value="{{ meIsAdmin }}" hint-placeholder-val="{{ false }}">
+                <div style="background:#15170F;border:1px solid rgba(255,138,138,.25);border-radius:16px;padding:16px 18px;">
+                  <div style="font-family:Barlow Condensed;font-weight:700;font-size:16px;text-transform:uppercase;letter-spacing:.06em;">🛡️ Admin · read-only accounts</div>
+                  <div style="color:#9DA391;font-size:12px;margin-bottom:12px;">Athletes currently locked out. Reactivate when they're back — or set anyone read-only from their profile.</div>
+                  <sc-if value="{{ adminHasDisabled }}" hint-placeholder-val="{{ true }}">
+                    <div style="display:flex;flex-direction:column;gap:10px;">
+                      <sc-for list="{{ adminDisabledList }}" as="d" hint-placeholder-count="2">
+                        <div style="display:flex;align-items:center;gap:12px;">
+                          <div style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:15px;color:#0C0D0A;background:{{ d.color }};flex-shrink:0;">{{ d.avatarNode }}</div>
+                          <div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:14px;">{{ d.name }}</div><div style="color:#9DA391;font-size:11px;">{{ d.reason }}</div></div>
+                          <button onClick="{{ d.onReactivate }}" style="padding:8px 14px;border-radius:9px;border:1px solid #59E6A6;background:transparent;color:#59E6A6;font-weight:700;font-size:12px;cursor:pointer;flex-shrink:0;">Reactivate</button>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{ !adminHasDisabled }}" hint-placeholder-val="{{ false }}">
+                    <div style="color:#6b7061;font-size:13px;">No read-only accounts right now. 🎉</div>
+                  </sc-if>
+                </div>
+              </sc-if>
             </sc-if>
 
             <div style="background:#15170F;border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:20px;">
@@ -1719,6 +1747,20 @@ class Component extends DCLogic {
       .catch((err) => this.toast((err && err.detail) || 'Could not remove target'));
   };
 
+  // ---- admin (reactivate / disable an athlete) ----
+  adminReactivate = (userId) => {
+    if (!userId) return;
+    this.api('/admin/users/' + userId + '/reactivate/', { method: 'POST', body: JSON.stringify({}) })
+      .then(() => { this.toast('Reactivated ✅'); this.refreshData(true); })
+      .catch((err) => this.toast((err && err.detail) || 'Could not reactivate'));
+  };
+  adminDisable = (userId) => {
+    if (!userId) return;
+    this.api('/admin/users/' + userId + '/disable/', { method: 'POST', body: JSON.stringify({ reason: 'Set read-only by an admin' }) })
+      .then(() => { this.toast('Set to read-only'); this.refreshData(true); })
+      .catch((err) => this.toast((err && err.detail) || 'Could not update'));
+  };
+
   renderVals() {
     const S = this.state;
     if (!S.ready) return { notReady: true, showOnboarding: false, showApp: false, hasUsers: false, showJumpBackIn: false,
@@ -1729,6 +1771,7 @@ class Component extends DCLogic {
       todayStrip: [], showSkipSection: false, isSkippedToday: false, skipPromptOpen: false, skipReasonInput: '',
       pGoalsView: [], pHasGoals: false, pCanAddGoal: false, pNoGoalsLabel: '', goalMetricChips: [],
       goalSheetOpen: false, goalReadingOpen: false, goalUnitLabel: '', readingGoalName: '', readingGoalLine: '',
+      pReadOnly: false, meIsAdmin: false, pAdminCanAct: false, adminDisabledList: [], adminHasDisabled: false,
       showInstallBanner: false, showPushBanner: false,
       showBuddyCard: false, buddyIsBye: false, buddyPending: false, buddyStreakShow: false,
       boardBuddies: [], hasBuddies: false,
@@ -1750,7 +1793,7 @@ class Component extends DCLogic {
     };
 
     const rows = S.users.map(u => { const b = this.scoreBreakdown(u.id, mk);
-      return { ...uv(u), score: b.total, minutes: b.minutes, sessions: b.sessions, streak: this.currentStreak(u.id) }; })
+      return { ...uv(u), score: b.total, minutes: b.minutes, sessions: b.sessions, streak: this.currentStreak(u.id), readOnly: u.status === 'disabled' }; })
       .sort((a, b) => b.score - a.score || b.minutes - a.minutes);
     rows.forEach((r, i) => { r.rank = i + 1; r.isMe = r.id === S.meId; r.onOpen = () => this.openProfile(r.id);
       r.rowStyle = 'display:flex;align-items:center;gap:14px;width:100%;padding:11px 12px;border-radius:14px;border:1px solid ' + (r.isMe ? '#C7F536' : 'rgba(255,255,255,.05)') + ';background:' + (r.isMe ? 'rgba(199,245,54,.07)' : 'transparent') + ';cursor:pointer;color:#F3F5EC;text-align:left;margin-bottom:6px;'; });
@@ -1969,6 +2012,19 @@ class Component extends DCLogic {
     const readingGoalName = readingGoal ? (readingGoal.metricLabel || readingGoal.label || readingGoal.metric) : '';
     const readingGoalLine = readingGoal ? (readingGoal.baseline + ' → ' + readingGoal.target + (readingGoal.unit ? ' ' + readingGoal.unit : '')) : '';
 
+    // ---- admin controls + read-only badges ----
+    const meIsAdmin = !!(meUser && meUser.role === 'admin');
+    const pReadOnly = !!(pUser && pUser.status === 'disabled');
+    const pAdminCanAct = meIsAdmin && !pIsMe && !!pUser;
+    const pAdminActionLabel = pReadOnly ? 'Reactivate account' : 'Set read-only';
+    const pAdminAction = pReadOnly ? (() => this.adminReactivate(pid)) : (() => this.adminDisable(pid));
+    const pAdminActionStyle = 'padding:11px 16px;border-radius:12px;border:1px solid ' + (pReadOnly ? '#59E6A6' : '#FF8A8A') + ';background:transparent;color:' + (pReadOnly ? '#59E6A6' : '#FF8A8A') + ';font-family:Barlow Condensed;font-weight:800;font-size:15px;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;';
+    const adminDisabledList = meIsAdmin ? S.users.filter(u => u.status === 'disabled').map(u => {
+      const v = uv(u);
+      return { id: u.id, name: v.name, color: v.color, avatarNode: v.avatarNode, reason: u.disabledReason || 'Read-only', onReactivate: () => this.adminReactivate(u.id) };
+    }) : [];
+    const adminHasDisabled = adminDisabledList.length > 0;
+
     const cp = mk.split('-').map(Number); const cy = cp[0], cm = cp[1];
     const dim = new Date(cy, cm, 0).getDate();
     const lead = (new Date(cy, cm - 1, 1).getDay() + 6) % 7;
@@ -2171,6 +2227,8 @@ class Component extends DCLogic {
       onGoalReadingValue: this.onGoalReadingValue, onGoalReadingNote: this.onGoalReadingNote,
       saveGoalReading: this.saveGoalReading, savingReading: !!S.savingReading,
       deleteReadingGoal: () => this.deleteGoal(S.goalReadingFor),
+      pReadOnly, meIsAdmin, pAdminCanAct, pAdminActionLabel, pAdminAction, pAdminActionStyle,
+      adminDisabledList, adminHasDisabled,
       calBlanks, calCells,
       groupedDays, hasHistory: groupedDays.length > 0, noHistory: groupedDays.length === 0,
     };
