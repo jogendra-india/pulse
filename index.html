@@ -1292,10 +1292,29 @@ class Component extends DCLogic {
     while (set.has(this.fmt(d))) { n++; d.setDate(d.getDate() - 1); }
     return n;
   }
+  // Consecutive logged days ending today (same noon grace as currentStreak) but
+  // never counting days before `floor` (an ISO date). Streak *points* use this
+  // with the month's first day, so a long lifetime streak stops handing a
+  // head start on the 1st — the displayed 🔥 streak stays lifetime.
+  streakSince(id, floor) {
+    const set = new Set(this.state.entries.filter(e => e.userId === id).map(e => e.date));
+    let d = new Date();
+    if (!set.has(this.fmt(d))) {
+      d.setDate(d.getDate() - 1);
+      if (!set.has(this.fmt(d))) {
+        if (new Date().getHours() < 12) { d.setDate(d.getDate() - 1); if (!set.has(this.fmt(d))) return 0; }
+        else return 0;
+      }
+    }
+    let n = 0;
+    while (set.has(this.fmt(d)) && this.fmt(d) >= floor) { n++; d.setDate(d.getDate() - 1); }
+    return n;
+  }
   scoreBreakdown(id, mk) {
     const es = this.state.entries.filter(e => e.userId === id && this.monthKeyOf(this.parse(e.date)) === mk);
     const activity = es.reduce((s, e) => s + 10 + (e.minutes || 0), 0);
-    const streak = (mk === this.monthKeyOf(new Date())) ? this.currentStreak(id) * 15 : 0;
+    // Month-scoped: streak points only count the run *within* this month.
+    const streak = (mk === this.monthKeyOf(new Date())) ? this.streakSince(id, mk + '-01') * 15 : 0;
     const goal = this.userGoal(id);
     const weeks = {};
     es.forEach(e => { const w = this.weekKey(this.parse(e.date)); weeks[w] = (weeks[w] || 0) + (e.minutes || 0); });
@@ -1900,6 +1919,7 @@ class Component extends DCLogic {
     const me = meUser ? uv(meUser) : { name: '', initials: '', color: '#C7F536' };
     const meB = meUser ? this.scoreBreakdown(S.meId, nowMK) : { activity: 0, streak: 0, weeklyGoal: 0, variety: 0, buddy: 0, targets: 0, total: 0, minutes: 0, sessions: 0 };
     const meStreak = meUser ? this.currentStreak(S.meId) : 0;
+    const meMonthStreak = meUser ? this.streakSince(S.meId, nowMK + '-01') : 0;
     const meRow = rows.find(r => r.id === S.meId);
     const meRank = meRow ? meRow.rank : null;
 
@@ -1912,7 +1932,7 @@ class Component extends DCLogic {
       : (meStreak > 0 ? "Don't break your " + meStreak + "-day streak — log today's session." : 'Log your first workout to start a streak.');
 
     const statCards = [
-      { label: 'Streak', value: meStreak, sub: (meStreak === 1 ? 'day' : 'days') + ' in a row', icon: '🔥', accent: '#FF6A3D' },
+      { label: 'Streak', value: meStreak, sub: meMonthStreak + ' this month · ' + (meStreak === 1 ? 'day' : 'days') + ' overall', icon: '🔥', accent: '#FF6A3D' },
       { label: 'Score · ' + this.monShort(nowMK), value: meB.total, sub: 'this month', icon: '⚡', accent: '#C7F536' },
       { label: 'Rank', value: meRank ? '#' + meRank : '—', sub: 'of ' + rows.length + ' athletes', icon: '🏆', accent: '#FFD23F' },
       { label: 'Minutes', value: meB.minutes, sub: meB.sessions + ' sessions', icon: '⏱', accent: '#4DD4FF' },
@@ -1921,7 +1941,7 @@ class Component extends DCLogic {
     const barsOf = (b) => {
       const arr = [
         { label: 'Activity (10/session + 1/min)', value: b.activity, color: '#C7F536' },
-        { label: 'Streak (15 × days)', value: b.streak, color: '#FF6A3D' },
+        { label: 'Streak this month (15 × days)', value: b.streak, color: '#FF6A3D' },
         { label: 'Weekly goal (+50)', value: b.weeklyGoal, color: '#FFD23F' },
         { label: 'Variety (10/type)', value: b.variety, color: '#4DD4FF' },
       ];
@@ -1962,6 +1982,7 @@ class Component extends DCLogic {
     const pView = pUser ? uv(pUser) : me;
     const pB = pUser ? this.scoreBreakdown(pid, mk) : meB;
     const pStreak = pUser ? this.currentStreak(pid) : 0;
+    const pMonthStreak = pUser ? this.streakSince(pid, mk + '-01') : 0;
     const pRow = rows.find(r => r.id === pid);
     const pRank = pRow ? pRow.rank : null;
     const pIsMe = pid === S.meId;
@@ -1975,7 +1996,8 @@ class Component extends DCLogic {
       { label: 'Score', value: pB.total, accent: '#C7F536' },
       { label: 'Rank', value: pRank ? '#' + pRank : '—', accent: '#FFD23F' },
       { label: 'Minutes', value: pB.minutes, accent: '#4DD4FF' },
-      { label: 'Streak', value: pStreak, accent: '#FF6A3D' },
+      { label: 'Streak · overall', value: pStreak, accent: '#FF6A3D' },
+      { label: 'Streak · this month', value: pMonthStreak, accent: '#59E6A6' },
     ];
 
     // Personal targets for the profile being viewed, this month. Read-only for
