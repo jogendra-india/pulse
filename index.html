@@ -832,6 +832,10 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
 class Component extends DCLogic {
   KEY = 'pulse.flb.v1';
   API_BASE = 'https://ledgerbal.com/api/pulse';
+  // A workout can be logged for its date and up to this many days after; a day
+  // only "settles" (breaks streaks, applies buddy penalties) once it's older.
+  // Must match pulse.serializers.BACKFILL_DAYS on the backend.
+  BACKFILL_DAYS = 3;
   state = {
     ready: false, users: [], entries: [], meId: null,
     view: 'onboarding', tab: 'home', profileId: null, monthKey: null,
@@ -1271,23 +1275,14 @@ class Component extends DCLogic {
   userGoal(id) { const u = this.state.users.find(u => u.id === id); return (u && u.goal) || 150; }
   currentStreak(id) {
     const set = new Set(this.state.entries.filter(e => e.userId === id).map(e => e.date));
+    // Days inside the backfill window are still loggable, so an unlogged one
+    // can't break the streak yet — skip over them. The streak only collapses
+    // once a *settled* day (past the window) comes up unlogged.
+    const of = new Date(); of.setDate(of.getDate() - this.BACKFILL_DAYS);
+    const openFloor = this.fmt(of);
     let d = new Date();
-    // Today is in progress, and yesterday stays backfillable until noon today —
-    // neither breaks the streak until its logging window has closed. So an
-    // unlogged today is skipped, and before noon an unlogged yesterday is given
-    // the same grace; the streak only collapses once a *settled* day (one past
-    // its noon-next-day cutoff) comes up unlogged.
-    if (!set.has(this.fmt(d))) {
-      d.setDate(d.getDate() - 1);                 // step to yesterday
-      if (!set.has(this.fmt(d))) {
-        if (new Date().getHours() < 12) {
-          d.setDate(d.getDate() - 1);             // yesterday still open → skip it too
-          if (!set.has(this.fmt(d))) return 0;
-        } else {
-          return 0;
-        }
-      }
-    }
+    while (!set.has(this.fmt(d)) && this.fmt(d) >= openFloor) { d.setDate(d.getDate() - 1); }
+    if (!set.has(this.fmt(d))) return 0;
     let n = 0;
     while (set.has(this.fmt(d))) { n++; d.setDate(d.getDate() - 1); }
     return n;
@@ -1298,14 +1293,11 @@ class Component extends DCLogic {
   // head start on the 1st — the displayed 🔥 streak stays lifetime.
   streakSince(id, floor) {
     const set = new Set(this.state.entries.filter(e => e.userId === id).map(e => e.date));
+    const of = new Date(); of.setDate(of.getDate() - this.BACKFILL_DAYS);
+    const openFloor = this.fmt(of);
     let d = new Date();
-    if (!set.has(this.fmt(d))) {
-      d.setDate(d.getDate() - 1);
-      if (!set.has(this.fmt(d))) {
-        if (new Date().getHours() < 12) { d.setDate(d.getDate() - 1); if (!set.has(this.fmt(d))) return 0; }
-        else return 0;
-      }
-    }
+    while (!set.has(this.fmt(d)) && this.fmt(d) >= openFloor) { d.setDate(d.getDate() - 1); }
+    if (!set.has(this.fmt(d))) return 0;
     let n = 0;
     while (set.has(this.fmt(d)) && this.fmt(d) >= floor) { n++; d.setDate(d.getDate() - 1); }
     return n;
@@ -1394,13 +1386,11 @@ class Component extends DCLogic {
     const p = mk.split('-').map(Number), y = p[0], m = p[1];
     const dim = new Date(y, m, 0).getDate();
     const todayStr = this.today;
-    // Entries for a day stay loggable until noon the day after (the backfill
-    // cutoff) — so yesterday isn't a settled day until 12:00 today, and
-    // penalising it earlier would punish a buddy who can still log it.
-    const nowD = new Date();
-    const yD = new Date(nowD); yD.setDate(yD.getDate() - 1);
-    const yesterdayStr = this.fmt(yD);
-    const yesterdayStillOpen = nowD.getHours() < 12;
+    // A day stays loggable for BACKFILL_DAYS days, so it isn't "settled" until
+    // then — penalising it earlier would punish a buddy who can still log it.
+    // Bonuses still count immediately (both already logged); only penalties wait.
+    const openD = new Date(); openD.setDate(openD.getDate() - this.BACKFILL_DAYS);
+    const openFloorStr = this.fmt(openD);
     const joined = (uid) => {
       const u = this.state.users.find(x => x.id === uid);
       return u && u.createdAt ? u.createdAt.slice(0, 10) : null;
@@ -1429,8 +1419,7 @@ class Component extends DCLogic {
         const a = this.dayStatus(id, ds), b = this.dayStatus(buddyId, ds);
         const bothLogged = a === 'logged' && b === 'logged';
         if (bothLogged) { pts += bonus; continue; }
-        if (ds === todayStr) continue; // day in progress → no penalty yet
-        if (ds === yesterdayStr && yesterdayStillOpen) continue; // backfill window open
+        if (ds >= openFloorStr) continue; // still inside the backfill window → not settled, no penalty yet
         const aMiss = a === 'missed' || (a === 'excused' && !shields);
         const bMiss = b === 'missed' || (b === 'excused' && !shields);
         if (aMiss || bMiss) pts -= modeB ? penalty : (aMiss ? penalty : 0);
@@ -2119,8 +2108,8 @@ class Component extends DCLogic {
 
     // Mirror the backend's backfill cutoff in the picker: today always, plus
     // yesterday only before noon. Editing keeps the entry's own date reachable.
-    const yest = new Date(now); yest.setDate(yest.getDate() - 1);
-    let entryDateMin = now.getHours() < 12 ? this.fmt(yest) : this.today;
+    const backfillFloor = new Date(now); backfillFloor.setDate(backfillFloor.getDate() - this.BACKFILL_DAYS);
+    let entryDateMin = this.fmt(backfillFloor);
     if (S.editingEntryId && S.form.date && S.form.date < entryDateMin) entryDateMin = S.form.date;
     const entryDateMax = this.today;
 
