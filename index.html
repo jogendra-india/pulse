@@ -67,16 +67,46 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
         <sc-if value="{{ showJumpBackIn }}" hint-placeholder-val="{{ false }}">
           <div style="display:flex;flex-direction:column;gap:10px;">
             <div style="font-family:Barlow Condensed;font-weight:700;font-size:19px;text-transform:uppercase;letter-spacing:.08em;color:#9DA391;">Jump back in</div>
-            <sc-for list="{{ existingUsers }}" as="u" hint-placeholder-count="3">
-              <button onClick="{{ u.onSelectLogin }}" style="display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.08);background:#15170F;cursor:pointer;text-align:left;color:#F3F5EC;transition:.15s;" style-hover="border-color:#C7F536;background:#1b1e13;">
-                <div style="width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:20px;color:#0C0D0A;background:{{ u.color }};">{{ u.avatarNode }}</div>
+
+            <sc-if value="{{ hasPreferredUser }}" hint-placeholder-val="{{ true }}">
+              <button onClick="{{ preferredUser.onSelectLogin }}" style="display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:16px;border:1px solid rgba(199,245,54,.45);background:linear-gradient(120deg,rgba(199,245,54,.10),rgba(199,245,54,.02));cursor:pointer;text-align:left;color:#F3F5EC;transition:.15s;" style-hover="border-color:#C7F536;background:#1b1e13;">
+                <div style="width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:21px;color:#0C0D0A;background:{{ preferredUser.color }};overflow:hidden;flex-shrink:0;">{{ preferredUser.avatarNode }}</div>
                 <div style="flex:1;min-width:0;">
-                  <div style="font-weight:700;font-size:16px;">{{ u.name }}</div>
-                  <div style="color:#9DA391;font-size:13px;">{{ u.subtitle }}</div>
+                  <div style="font-weight:700;font-size:17px;">{{ preferredUser.name }}</div>
+                  <div style="color:#9DA391;font-size:13px;">{{ preferredUser.subtitle }}</div>
                 </div>
-                <div style="color:#C7F536;font-family:Barlow Condensed;font-weight:700;font-size:15px;letter-spacing:.06em;text-transform:uppercase;">{{ u.actionLabel }}</div>
+                <div style="color:#C7F536;font-family:Barlow Condensed;font-weight:800;font-size:16px;letter-spacing:.06em;text-transform:uppercase;">Continue →</div>
               </button>
-            </sc-for>
+
+              <sc-if value="{{ hasOtherUsers }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ toggleAllUsers }}" style="align-self:flex-start;background:transparent;border:none;color:#9DA391;cursor:pointer;font-size:13px;padding:4px 2px;letter-spacing:.02em;" style-hover="color:#C7F536;">{{ otherUsersToggleLabel }}</button>
+                <sc-if value="{{ showAllUsers }}" hint-placeholder-val="{{ false }}">
+                  <sc-for list="{{ otherUsers }}" as="u" hint-placeholder-count="3">
+                    <button onClick="{{ u.onSelectLogin }}" style="display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.08);background:#15170F;cursor:pointer;text-align:left;color:#F3F5EC;transition:.15s;" style-hover="border-color:#C7F536;background:#1b1e13;">
+                      <div style="width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:20px;color:#0C0D0A;background:{{ u.color }};">{{ u.avatarNode }}</div>
+                      <div style="flex:1;min-width:0;">
+                        <div style="font-weight:700;font-size:16px;">{{ u.name }}</div>
+                        <div style="color:#9DA391;font-size:13px;">{{ u.subtitle }}</div>
+                      </div>
+                      <div style="color:#C7F536;font-family:Barlow Condensed;font-weight:700;font-size:15px;letter-spacing:.06em;text-transform:uppercase;">{{ u.actionLabel }}</div>
+                    </button>
+                  </sc-for>
+                </sc-if>
+              </sc-if>
+            </sc-if>
+
+            <sc-if value="{{ !hasPreferredUser }}" hint-placeholder-val="{{ false }}">
+              <sc-for list="{{ existingUsers }}" as="u" hint-placeholder-count="3">
+                <button onClick="{{ u.onSelectLogin }}" style="display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.08);background:#15170F;cursor:pointer;text-align:left;color:#F3F5EC;transition:.15s;" style-hover="border-color:#C7F536;background:#1b1e13;">
+                  <div style="width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:Barlow Condensed;font-weight:800;font-size:20px;color:#0C0D0A;background:{{ u.color }};">{{ u.avatarNode }}</div>
+                  <div style="flex:1;min-width:0;">
+                    <div style="font-weight:700;font-size:16px;">{{ u.name }}</div>
+                    <div style="color:#9DA391;font-size:13px;">{{ u.subtitle }}</div>
+                  </div>
+                  <div style="color:#C7F536;font-family:Barlow Condensed;font-weight:700;font-size:15px;letter-spacing:.06em;text-transform:uppercase;">{{ u.actionLabel }}</div>
+                </button>
+              </sc-for>
+            </sc-if>
           </div>
           <div style="display:flex;align-items:center;gap:12px;color:#5c6152;font-size:12px;text-transform:uppercase;letter-spacing:.14em;">
             <div style="flex:1;height:1px;background:rgba(255,255,255,.08);"></div>new athlete<div style="flex:1;height:1px;background:rgba(255,255,255,.08);"></div>
@@ -353,7 +383,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
                 <textarea value="{{ form.notes }}" onInput="{{ onNotes }}" placeholder="Sets, reps, route, how it felt…" rows="3" style="width:100%;padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:#0C0D0A;color:#F3F5EC;font-size:16px;outline:none;font-family:inherit;resize:vertical;"></textarea>
               </div>
 
-              <button onClick="{{ addEntry }}" disabled="{{ savingEntry }}" style="{{ saveButtonStyle }}" style-hover="background:#d4ff4d;">{{ saveButtonContent }}</button>
+              <button onClick="{{ addEntry }}" disabled="{{ saveDisabled }}" style="{{ saveButtonStyle }}" style-hover="background:#d4ff4d;">{{ saveButtonContent }}</button>
               <sc-if value="{{ isEditingEntry }}" hint-placeholder-val="{{ false }}">
                 <button onClick="{{ cancelEditEntry }}" style="background:transparent;border:none;color:#9DA391;cursor:pointer;font-size:13px;padding:2px 0;" style-hover="color:#F3F5EC;">Cancel edit</button>
               </sc-if>
@@ -700,6 +730,7 @@ class Component extends DCLogic {
     confirmDeleteId: null,
     authToken: null,
     loginTargetId: null, loginPassword: '',
+    lastUserId: null, showAllUsers: false,
     avatarViewerUserId: null,
     newPasswordInput: '',
     savingEntry: false,
@@ -723,12 +754,18 @@ class Component extends DCLogic {
     const meId = (saved && saved.meId) || null;
     const authToken = (saved && saved.authToken) || null;
     const typeOptions = (saved && saved.typeOptions) || this.state.typeOptions;
+    // Who to offer as the login default. Prefer the explicitly-remembered last
+    // athlete; fall back to a currently-saved session (existing installs that
+    // predate this), so the default appears without needing a fresh login.
+    let lastUserId = null;
+    try { lastUserId = localStorage.getItem(this.KEY + '.lastUser') || null; } catch (e) {}
+    if (!lastUserId) lastUserId = meId;
     let reviewSeen = null;
     try { reviewSeen = localStorage.getItem(this.KEY + '.reviewSeen'); } catch (e) {}
     // meId/authToken must be in state BEFORE the first fetch — data reads
     // now require the token, and api() attaches it from state.
     this.setState({
-      typeOptions, reviewSeen, meId, authToken,
+      typeOptions, reviewSeen, meId, authToken, lastUserId,
       monthKey: this.monthKeyOf(new Date()),
       goalInput: defGoal,
       form: { ...this.state.form, date: this.today, time: this.nowTimeStr() },
@@ -837,6 +874,7 @@ class Component extends DCLogic {
   };
   pokeBuddy = () => {
     if (this.state.poking) return;
+    if (this.meIsReadOnly()) { this.toast('Your account is read-only — ask an admin to reactivate it.'); return; }
     const buddyId = this.buddyOf(this.state.meId);
     if (!buddyId) return;
     this.setState({ poking: true });
@@ -939,7 +977,7 @@ class Component extends DCLogic {
   async fetchCore(meId) {
     if (!this.state.authToken) {
       const usersResp = await this.api('/users/?limit=500');
-      const users = (usersResp.results || []).map(u => ({ id: u.id, name: u.name, goal: u.goal, fitnessFocus: u.fitness_focus || 'general', avatar: u.avatar || null, avatarFocalX: u.avatar_focal_x ?? 50, avatarFocalY: u.avatar_focal_y ?? 50, avatarZoom: u.avatar_zoom ?? 100, createdAt: u.created_at }));
+      const users = (usersResp.results || []).map(u => ({ id: u.id, name: u.name, goal: u.goal, fitnessFocus: u.fitness_focus || 'general', avatar: u.avatar || null, avatarFocalX: u.avatar_focal_x ?? 50, avatarFocalY: u.avatar_focal_y ?? 50, avatarZoom: u.avatar_zoom ?? 100, createdAt: u.created_at, status: u.status || 'active', role: u.role || 'athlete', disabledReason: u.disabled_reason || '' }));
       return { users, entries: [], attendance: [], skips: [], buddy: { periodStart: null, periodEnd: null, daysLeft: null, config: null, pairs: [], monthCycles: [] }, insights: { daily: null, monthly: null } };
     }
     const [usersResp, entriesResp, attendanceResp, skipsResp, buddiesResp, insightsResp] = await Promise.all([
@@ -950,7 +988,7 @@ class Component extends DCLogic {
       this.api('/buddies/'),
       meId ? this.api('/insights/?user=' + meId).catch(() => null) : Promise.resolve(null),
     ]);
-    const users = (usersResp.results || []).map(u => ({ id: u.id, name: u.name, goal: u.goal, fitnessFocus: u.fitness_focus || 'general', avatar: u.avatar || null, avatarFocalX: u.avatar_focal_x ?? 50, avatarFocalY: u.avatar_focal_y ?? 50, avatarZoom: u.avatar_zoom ?? 100, createdAt: u.created_at }));
+    const users = (usersResp.results || []).map(u => ({ id: u.id, name: u.name, goal: u.goal, fitnessFocus: u.fitness_focus || 'general', avatar: u.avatar || null, avatarFocalX: u.avatar_focal_x ?? 50, avatarFocalY: u.avatar_focal_y ?? 50, avatarZoom: u.avatar_zoom ?? 100, createdAt: u.created_at, status: u.status || 'active', role: u.role || 'athlete', disabledReason: u.disabled_reason || '' }));
     const entries = (entriesResp.results || []).map(e => ({ id: e.id, userId: e.user, date: e.date, minutes: e.minutes, type: e.type, notes: e.notes || '', photo: e.photo || null, startTime: e.start_time || null, createdAt: e.created_at }));
     const attendance = (attendanceResp.results || []).map(r => this.mapAttendance(r));
     const skips = (skipsResp.results || []).map(s => ({ userId: s.user, date: s.date, reason: s.reason }));
@@ -1039,8 +1077,12 @@ class Component extends DCLogic {
   }
 
   save() {
-    const { meId, authToken, typeOptions } = this.state;
+    const { meId, authToken, typeOptions, lastUserId } = this.state;
     try { localStorage.setItem(this.KEY, JSON.stringify({ meId, authToken, typeOptions })); } catch (e) {}
+    // Remembered separately from meId so it survives logout — the login screen
+    // offers this athlete as the one-tap default. Only ever written, never
+    // cleared, so a logout still knows who was last here.
+    try { if (lastUserId) localStorage.setItem(this.KEY + '.lastUser', lastUserId); } catch (e) {}
   }
   update(patch) { this.setState(patch, () => this.save()); }
 
@@ -1098,7 +1140,22 @@ class Component extends DCLogic {
   currentStreak(id) {
     const set = new Set(this.state.entries.filter(e => e.userId === id).map(e => e.date));
     let d = new Date();
-    if (!set.has(this.fmt(d))) { d.setDate(d.getDate() - 1); if (!set.has(this.fmt(d))) return 0; }
+    // Today is in progress, and yesterday stays backfillable until noon today —
+    // neither breaks the streak until its logging window has closed. So an
+    // unlogged today is skipped, and before noon an unlogged yesterday is given
+    // the same grace; the streak only collapses once a *settled* day (one past
+    // its noon-next-day cutoff) comes up unlogged.
+    if (!set.has(this.fmt(d))) {
+      d.setDate(d.getDate() - 1);                 // step to yesterday
+      if (!set.has(this.fmt(d))) {
+        if (new Date().getHours() < 12) {
+          d.setDate(d.getDate() - 1);             // yesterday still open → skip it too
+          if (!set.has(this.fmt(d))) return 0;
+        } else {
+          return 0;
+        }
+      }
+    }
     let n = 0;
     while (set.has(this.fmt(d))) { n++; d.setDate(d.getDate() - 1); }
     return n;
@@ -1293,6 +1350,7 @@ class Component extends DCLogic {
     this.setState({ entryPhotoFile: file, entryPhotoPreview: URL.createObjectURL(file) });
   };
   selectLoginTarget = (id) => this.setState({ loginTargetId: id, loginPassword: '' });
+  toggleAllUsers = () => this.setState({ showAllUsers: !this.state.showAllUsers });
   cancelLogin = () => this.setState({ loginTargetId: null, loginPassword: '' });
   onLoginPassword = (e) => this.setState({ loginPassword: e.target.value });
   onLoginKeyDown = (e) => { if (e.key === 'Enter') this.submitLogin(); };
@@ -1303,7 +1361,7 @@ class Component extends DCLogic {
       .then(u => {
         this.setState({
           meId: u.id, authToken: u.token, view: 'app', tab: 'home', profileId: u.id,
-          loginTargetId: null, loginPassword: '',
+          loginTargetId: null, loginPassword: '', lastUserId: u.id,
         }, () => { this.save(); this.refreshData(true); });
         this.toast('Welcome back, ' + u.name.split(' ')[0] + '!');
       })
@@ -1336,10 +1394,10 @@ class Component extends DCLogic {
     this.setState({ creatingUser: true });
     this.api('/users/', { method: 'POST', body: fd })
       .then(u => {
-        const user = { id: u.id, name: u.name, goal: u.goal, avatar: u.avatar || null, avatarFocalX: 50, avatarFocalY: 50, avatarZoom: 100, createdAt: u.created_at };
+        const user = { id: u.id, name: u.name, goal: u.goal, avatar: u.avatar || null, avatarFocalX: 50, avatarFocalY: 50, avatarZoom: 100, createdAt: u.created_at, status: u.status || 'active', role: u.role || 'athlete', disabledReason: u.disabled_reason || '' };
         this.setState({ users: [...this.state.users, user],
           meId: user.id, authToken: u.token, view: 'app', tab: 'home', profileId: user.id, nameInput: '',
-          avatarFile: null, avatarPreview: null, creatingUser: false },
+          avatarFile: null, avatarPreview: null, creatingUser: false, lastUserId: user.id },
           () => { this.save(); this.refreshData(true); });
         this.toast('Welcome, ' + name.split(' ')[0] + '!');
       })
@@ -1361,8 +1419,16 @@ class Component extends DCLogic {
     if (!this.state.typeOptions.includes(t)) this.update({ typeOptions: [...this.state.typeOptions, t], form: { ...this.state.form, type: t, customType: '', adding: false } });
     else this.setForm({ type: t, customType: '', adding: false });
   };
+  // A disabled (read-only) athlete can't log, excuse, or poke — the backend
+  // enforces this too (403 account_disabled); this just gives instant feedback
+  // instead of a round-trip.
+  meIsReadOnly() {
+    const meU = this.state.users.find(u => u.id === this.state.meId);
+    return !!(meU && meU.status === 'disabled');
+  }
   addEntry = () => {
     if (this.state.savingEntry) return;
+    if (this.meIsReadOnly()) { this.toast('Your account is read-only — ask an admin to reactivate it.'); return; }
     const f = this.state.form; const min = Number(f.minutes);
     if (!min || min <= 0) { this.toast('Enter minutes'); return; }
     if (!f.type) { this.toast('Pick a type'); return; }
@@ -1456,6 +1522,7 @@ class Component extends DCLogic {
     const reason = (this.state.skipReasonInput || '').trim();
     if (!reason) { this.toast('Give us something to work with'); return; }
     if (this.state.savingSkip) return;
+    if (this.meIsReadOnly()) { this.toast('Your account is read-only — ask an admin to reactivate it.'); return; }
     this.setState({ savingSkip: true });
     this.api('/skips/', { method: 'POST', body: JSON.stringify({ user: this.state.meId, date: this.today, reason }) })
       .then(() => {
@@ -1463,9 +1530,9 @@ class Component extends DCLogic {
         this.toast('Excuse filed. Nice try 😏');
         this.refreshAttendance();
       })
-      .catch(() => {
+      .catch((err) => {
         this.setState({ savingSkip: false });
-        this.toast('Could not save that');
+        this.toast((err && err.detail) || 'Could not save that');
       });
   };
   cancelSkipToday = (skipId) => {
@@ -1481,6 +1548,8 @@ class Component extends DCLogic {
   renderVals() {
     const S = this.state;
     if (!S.ready) return { notReady: true, showOnboarding: false, showApp: false, hasUsers: false, showJumpBackIn: false,
+      hasPreferredUser: false, preferredUser: { name: '', color: '#C7F536', avatarNode: '', subtitle: '', onSelectLogin: () => {} },
+      otherUsers: [], hasOtherUsers: false, showAllUsers: false, otherUsersToggleLabel: '',
       existingUsers: [], nameInput: '', goalInput: 150, toast: null, navTabs: [], statCards: [], meBars: [],
       recent: [], typeChips: [], minChips: [], todayEntries: [], boardRest: [], calCells: [], calBlanks: [], groupedDays: [], pStats: [],
       todayStrip: [], showSkipSection: false, isSkippedToday: false, skipPromptOpen: false, skipReasonInput: '',
@@ -1608,6 +1677,7 @@ class Component extends DCLogic {
     }).filter(Boolean);
 
     const meUser = S.users.find(u => u.id === S.meId) || null;
+    const meReadOnly = !!(meUser && meUser.status === 'disabled');
     const me = meUser ? uv(meUser) : { name: '', initials: '', color: '#C7F536' };
     const meB = meUser ? this.scoreBreakdown(S.meId, nowMK) : { activity: 0, streak: 0, goals: 0, variety: 0, buddy: 0, total: 0, minutes: 0, sessions: 0 };
     const meStreak = meUser ? this.currentStreak(S.meId) : 0;
@@ -1732,6 +1802,14 @@ class Component extends DCLogic {
         onSelectLogin: () => this.selectLoginTarget(u.id) }; })
       .sort((a, b) => b.score - a.score);
 
+    // The last athlete to log in on this device, surfaced as the one-tap
+    // default so nobody has to scroll a full roster to find themselves. The
+    // rest sit behind a "someone else?" reveal. Falls back to the plain list
+    // when there's no remembered athlete (or they've since been removed).
+    const preferred = existingUsers.find(u => u.id === S.lastUserId) || null;
+    const otherUsers = preferred ? existingUsers.filter(u => u.id !== preferred.id) : existingUsers;
+    const preferredUser = preferred || { name: '', color: '#C7F536', avatarNode: '', subtitle: '', onSelectLogin: () => {} };
+
     const avatarViewerUser = S.avatarViewerUserId
       ? uv(S.users.find(x => x.id === S.avatarViewerUserId) || { id: null, name: '', avatar: null })
       : null;
@@ -1756,12 +1834,15 @@ class Component extends DCLogic {
     const entryDateMax = this.today;
 
     const saveBaseStyle = 'margin-top:2px;padding:15px;border-radius:12px;border:none;background:#C7F536;color:#0C0D0A;font-family:Barlow Condensed;font-weight:800;font-size:21px;letter-spacing:.05em;text-transform:uppercase;';
-    const saveButtonStyle = saveBaseStyle + (S.savingEntry ? 'opacity:.6;cursor:not-allowed;' : 'cursor:pointer;');
-    const saveButtonContent = S.savingEntry
-      ? React.createElement(React.Fragment, null,
-          React.createElement('span', { style: { display: 'inline-block', width: '16px', height: '16px', border: '2px solid rgba(12,13,10,.35)', borderTopColor: '#0C0D0A', borderRadius: '50%', animation: 'flbspin .6s linear infinite', marginRight: '8px', verticalAlign: '-3px' } }),
-          'Saving…')
-      : (S.editingEntryId ? 'Update workout ✓' : 'Save workout ✓');
+    const saveDisabled = S.savingEntry || meReadOnly;
+    const saveButtonStyle = saveBaseStyle + (saveDisabled ? 'opacity:.6;cursor:not-allowed;' : 'cursor:pointer;');
+    const saveButtonContent = meReadOnly
+      ? '🔒 Account read-only'
+      : (S.savingEntry
+        ? React.createElement(React.Fragment, null,
+            React.createElement('span', { style: { display: 'inline-block', width: '16px', height: '16px', border: '2px solid rgba(12,13,10,.35)', borderTopColor: '#0C0D0A', borderRadius: '50%', animation: 'flbspin .6s linear infinite', marginRight: '8px', verticalAlign: '-3px' } }),
+            'Saving…')
+        : (S.editingEntryId ? 'Update workout ✓' : 'Save workout ✓'));
 
     const createButtonStyle = 'margin-top:4px;padding:14px;border-radius:12px;border:none;background:#C7F536;color:#0C0D0A;font-family:Barlow Condensed;font-weight:800;font-size:20px;letter-spacing:.06em;text-transform:uppercase;'
       + (S.creatingUser ? 'opacity:.6;cursor:not-allowed;' : 'cursor:pointer;');
@@ -1778,6 +1859,10 @@ class Component extends DCLogic {
       isHome: S.tab === 'home', isLog: S.tab === 'log', isBoard: S.tab === 'board', isProfile: S.tab === 'profile',
       hasUsers: existingUsers.length > 0, existingUsers,
       showJumpBackIn: existingUsers.length > 0 && !S.loginTargetId,
+      hasPreferredUser: !!preferred, preferredUser,
+      otherUsers, hasOtherUsers: otherUsers.length > 0, showAllUsers: !!S.showAllUsers,
+      toggleAllUsers: this.toggleAllUsers,
+      otherUsersToggleLabel: S.showAllUsers ? 'Hide others' : ('Not you? Choose another (' + otherUsers.length + ')'),
       nameInput: S.nameInput, goalInput: S.goalInput, toast: S.toast,
       openMe: this.openMe, goLog: this.goLog, goBoard: this.goBoard,
       createUser: this.createUser, onName: this.onName, onGoal: this.onGoal,
@@ -1811,7 +1896,7 @@ class Component extends DCLogic {
       isEditingEntry: !!S.editingEntryId,
       logFormTitle: S.editingEntryId ? 'Edit workout' : 'Log a workout',
       cancelEditEntry: this.cancelEditEntry,
-      savingEntry: !!S.savingEntry,
+      savingEntry: !!S.savingEntry, saveDisabled,
       saveButtonStyle, saveButtonContent,
       createButtonStyle, createButtonContent, creatingUser: !!S.creatingUser,
       showInstallBanner: !!S.canInstall && !S.installBannerDismissed,
