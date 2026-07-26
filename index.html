@@ -510,7 +510,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
 
             <div style="background:rgba(199,245,54,.05);border:1px solid rgba(199,245,54,.18);border-radius:16px;padding:18px 20px;">
               <div style="font-family:Barlow Condensed;font-weight:700;font-size:17px;text-transform:uppercase;letter-spacing:.06em;color:#C7F536;margin-bottom:6px;">How points work</div>
-              <div style="color:#b9bdaf;font-size:13px;line-height:1.6;">Score = Activity + Streak + Goals + Variety + Buddy. Every session earns <b style="color:#F3F5EC;">10 pts + 1/min</b>. A live daily streak adds <b style="color:#F3F5EC;">15 pts × days</b>. Hit your weekly minute goal for <b style="color:#F3F5EC;">+50</b>. Mixing exercise types adds <b style="color:#F3F5EC;">+10 each</b>. When you and your <b style="color:#B78BFF;">buddy</b> both log a day, you each get a bonus — if either misses, you both take a hit. Buddies are reshuffled <b style="color:#F3F5EC;">every second Monday</b>, pairing whoever's most active with whoever's least. Board resets every month.</div>
+              <div style="color:#b9bdaf;font-size:13px;line-height:1.6;">Score = Activity + Streak + Weekly goal + Variety + Buddy + Targets. Every session earns <b style="color:#F3F5EC;">10 pts + 1/min</b>. A live daily streak adds <b style="color:#F3F5EC;">15 pts × days</b>. Hit your weekly minute goal for <b style="color:#F3F5EC;">+50</b>. Mixing exercise types adds <b style="color:#F3F5EC;">+10 each</b>. When you and your <b style="color:#B78BFF;">buddy</b> both log a day, you each get a bonus — if either misses, you both take a hit. Set personal <b style="color:#59E6A6;">targets</b> and each earns up to <b style="color:#F3F5EC;">+40</b> as you close on it, plus <b style="color:#F3F5EC;">+10</b> at the mid-month check-in. Buddies are reshuffled <b style="color:#F3F5EC;">every second Monday</b>, pairing whoever's most active with whoever's least. Board resets every month.</div>
             </div>
           </div>
         </sc-if>
@@ -539,6 +539,39 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
                   <div style="font-family:Barlow Condensed;font-weight:800;font-size:34px;color:{{ c.accent }};line-height:1.1;margin-top:4px;">{{ c.value }}</div>
                 </div>
               </sc-for>
+            </div>
+
+            <div style="background:#15170F;border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:20px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;">
+                <div style="font-family:Barlow Condensed;font-weight:700;font-size:19px;text-transform:uppercase;letter-spacing:.06em;">🎯 Targets · {{ monthLabel }}</div>
+                <sc-if value="{{ pCanAddGoal }}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{ openGoalSheet }}" style="padding:8px 14px;border-radius:10px;border:1px solid #59E6A6;background:transparent;color:#59E6A6;font-family:Barlow Condensed;font-weight:800;font-size:14px;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;" style-hover="background:rgba(89,230,166,.12);">＋ Add</button>
+                </sc-if>
+              </div>
+              <sc-if value="{{ pHasGoals }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;flex-direction:column;gap:16px;">
+                  <sc-for list="{{ pGoalsView }}" as="g" hint-placeholder-count="2">
+                    <div>
+                      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:6px;">
+                        <div style="font-weight:700;font-size:15px;">{{ g.name }}</div>
+                        <div style="color:#59E6A6;font-family:Barlow Condensed;font-weight:800;font-size:15px;">{{ g.pct }}</div>
+                      </div>
+                      <div style="height:10px;border-radius:6px;background:#0C0D0A;overflow:hidden;">
+                        <div style="height:100%;width:{{ g.pct }};background:{{ g.barColor }};border-radius:6px;"></div>
+                      </div>
+                      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:6px;flex-wrap:wrap;">
+                        <div style="color:#9DA391;font-size:12px;">{{ g.line }} · {{ g.current }} · <span style="color:#59E6A6;">{{ g.pointsLabel }}</span></div>
+                        <sc-if value="{{ pIsMe }}" hint-placeholder-val="{{ false }}">
+                          <button onClick="{{ g.onUpdate }}" style="padding:6px 12px;border-radius:9px;border:1px solid rgba(255,255,255,.15);background:transparent;color:#F3F5EC;font-size:12px;cursor:pointer;" style-hover="border-color:#59E6A6;color:#59E6A6;">Update</button>
+                        </sc-if>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ !pHasGoals }}" hint-placeholder-val="{{ false }}">
+                <div style="color:#9DA391;font-size:13px;">{{ pNoGoalsLabel }}</div>
+              </sc-if>
             </div>
 
             <sc-if value="{{ pIsMe }}" hint-placeholder-val="{{ false }}">
@@ -695,6 +728,59 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
     </div>
   </sc-if>
 
+  <sc-if value="{{ goalSheetOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;background:rgba(12,13,10,.8);backdrop-filter:blur(4px);z-index:67;display:flex;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#15170F;border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:22px;max-width:380px;width:100%;display:flex;flex-direction:column;gap:16px;animation:flbpop .2s ease;max-height:90vh;overflow-y:auto;">
+        <div style="font-family:Barlow Condensed;font-weight:800;font-size:22px;text-transform:uppercase;letter-spacing:.04em;">Set a target</div>
+        <div>
+          <label style="display:block;color:#9DA391;font-size:11px;text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px;">Metric</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <sc-for list="{{ goalMetricChips }}" as="c" hint-placeholder-count="6">
+              <button onClick="{{ c.onClick }}" style="{{ c.style }}">{{ c.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;">
+          <div style="flex:1;">
+            <label style="display:block;color:#9DA391;font-size:11px;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px;">Baseline{{ goalUnitLabel }}</label>
+            <input type="number" value="{{ goalBaseline }}" onInput="{{ onGoalBaseline }}" placeholder="now" style="width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:#0C0D0A;color:#F3F5EC;font-size:16px;outline:none;" />
+          </div>
+          <div style="flex:1;">
+            <label style="display:block;color:#9DA391;font-size:11px;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px;">Target{{ goalUnitLabel }}</label>
+            <input type="number" value="{{ goalTarget }}" onInput="{{ onGoalTarget }}" placeholder="goal" style="width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:#0C0D0A;color:#F3F5EC;font-size:16px;outline:none;" />
+          </div>
+        </div>
+        <div style="color:#6b7061;font-size:12px;">Each target earns up to +40 as you close the gap, plus +10 at the mid-month check-in. Progress is measured toward your own target, so any goal is fair game.</div>
+        <div style="display:flex;gap:10px;">
+          <button onClick="{{ closeGoalSheet }}" style="flex:1;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:transparent;color:#F3F5EC;font-weight:700;cursor:pointer;" style-hover="border-color:#59E6A6;">Cancel</button>
+          <button onClick="{{ saveTarget }}" disabled="{{ savingGoal }}" style="flex:1;padding:12px;border-radius:10px;border:none;background:#59E6A6;color:#0C0D0A;font-family:Barlow Condensed;font-weight:800;font-size:16px;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;">Set target</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ goalReadingOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;background:rgba(12,13,10,.8);backdrop-filter:blur(4px);z-index:67;display:flex;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#15170F;border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:22px;max-width:360px;width:100%;display:flex;flex-direction:column;gap:14px;animation:flbpop .2s ease;">
+        <div style="font-family:Barlow Condensed;font-weight:800;font-size:22px;text-transform:uppercase;letter-spacing:.04em;">Update {{ readingGoalName }}</div>
+        <div style="color:#9DA391;font-size:13px;margin-top:-6px;">{{ readingGoalLine }}</div>
+        <div>
+          <label style="display:block;color:#9DA391;font-size:11px;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px;">Where are you now?</label>
+          <input type="number" value="{{ goalReadingValue }}" onInput="{{ onGoalReadingValue }}" style="width:100%;padding:13px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:#0C0D0A;color:#F3F5EC;font-size:16px;outline:none;" />
+        </div>
+        <div>
+          <label style="display:block;color:#9DA391;font-size:11px;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px;">Note (optional)</label>
+          <input value="{{ goalReadingNote }}" onInput="{{ onGoalReadingNote }}" placeholder="how it felt…" style="width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:#0C0D0A;color:#F3F5EC;font-size:15px;outline:none;" />
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button onClick="{{ closeGoalReading }}" style="flex:1;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:transparent;color:#F3F5EC;font-weight:700;cursor:pointer;" style-hover="border-color:#59E6A6;">Cancel</button>
+          <button onClick="{{ saveGoalReading }}" disabled="{{ savingReading }}" style="flex:2;padding:12px;border-radius:10px;border:none;background:#59E6A6;color:#0C0D0A;font-family:Barlow Condensed;font-weight:800;font-size:16px;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;">Log progress</button>
+        </div>
+        <button onClick="{{ deleteReadingGoal }}" style="align-self:center;background:transparent;border:none;color:#6b7061;cursor:pointer;font-size:12px;padding:2px 0;" style-hover="color:#FF6A3D;">Remove this target</button>
+      </div>
+    </div>
+  </sc-if>
+
   <sc-if value="{{ confirmDeleteOpen }}" hint-placeholder-val="{{ false }}">
     <div style="position:fixed;inset:0;background:rgba(12,13,10,.7);backdrop-filter:blur(4px);z-index:60;display:flex;align-items:center;justify-content:center;padding:20px;">
       <div style="background:#15170F;border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:26px;max-width:340px;width:100%;display:flex;flex-direction:column;gap:18px;text-align:center;animation:flbpop .2s ease;">
@@ -744,6 +830,10 @@ class Component extends DCLogic {
     pushSupported: false, pushEnabled: false, pushBannerDismissed: false, enablingPush: false,
     skips: [], buddy: { periodStart: null, periodEnd: null, daysLeft: null, config: null, pairs: [], monthCycles: [] }, poking: false,
     insights: { daily: null, monthly: null }, reviewSeen: null,
+    goals: [],
+    goalSheetOpen: false, goalReadingFor: null,
+    goalMetric: 'pushups', goalBaseline: '', goalTarget: '', savingGoal: false,
+    goalReadingValue: '', goalReadingNote: '', savingReading: false,
   };
 
   componentDidMount() {
@@ -978,15 +1068,16 @@ class Component extends DCLogic {
     if (!this.state.authToken) {
       const usersResp = await this.api('/users/?limit=500');
       const users = (usersResp.results || []).map(u => ({ id: u.id, name: u.name, goal: u.goal, fitnessFocus: u.fitness_focus || 'general', avatar: u.avatar || null, avatarFocalX: u.avatar_focal_x ?? 50, avatarFocalY: u.avatar_focal_y ?? 50, avatarZoom: u.avatar_zoom ?? 100, createdAt: u.created_at, status: u.status || 'active', role: u.role || 'athlete', disabledReason: u.disabled_reason || '' }));
-      return { users, entries: [], attendance: [], skips: [], buddy: { periodStart: null, periodEnd: null, daysLeft: null, config: null, pairs: [], monthCycles: [] }, insights: { daily: null, monthly: null } };
+      return { users, entries: [], attendance: [], skips: [], buddy: { periodStart: null, periodEnd: null, daysLeft: null, config: null, pairs: [], monthCycles: [] }, insights: { daily: null, monthly: null }, goals: [] };
     }
-    const [usersResp, entriesResp, attendanceResp, skipsResp, buddiesResp, insightsResp] = await Promise.all([
+    const [usersResp, entriesResp, attendanceResp, skipsResp, buddiesResp, insightsResp, goalsResp] = await Promise.all([
       this.api('/users/?limit=500'),
       this.api('/entries/?limit=2000'),
       this.api('/attendance/'),
       this.api('/skips/?limit=3000'),
       this.api('/buddies/'),
       meId ? this.api('/insights/?user=' + meId).catch(() => null) : Promise.resolve(null),
+      this.api('/goals/?month=' + this.monthKeyOf(new Date()) + '&limit=500').catch(() => null),
     ]);
     const users = (usersResp.results || []).map(u => ({ id: u.id, name: u.name, goal: u.goal, fitnessFocus: u.fitness_focus || 'general', avatar: u.avatar || null, avatarFocalX: u.avatar_focal_x ?? 50, avatarFocalY: u.avatar_focal_y ?? 50, avatarZoom: u.avatar_zoom ?? 100, createdAt: u.created_at, status: u.status || 'active', role: u.role || 'athlete', disabledReason: u.disabled_reason || '' }));
     const entries = (entriesResp.results || []).map(e => ({ id: e.id, userId: e.user, date: e.date, minutes: e.minutes, type: e.type, notes: e.notes || '', photo: e.photo || null, startTime: e.start_time || null, createdAt: e.created_at }));
@@ -994,7 +1085,8 @@ class Component extends DCLogic {
     const skips = (skipsResp.results || []).map(s => ({ userId: s.user, date: s.date, reason: s.reason }));
     const buddy = this.mapBuddies(buddiesResp);
     const insights = { daily: (insightsResp && insightsResp.daily) || null, monthly: (insightsResp && insightsResp.monthly) || null };
-    const data = { users, entries, attendance, skips, buddy, insights };
+    const goals = ((goalsResp && goalsResp.results) || []).map(g => this.mapGoal(g));
+    const data = { users, entries, attendance, skips, buddy, insights, goals };
     try { localStorage.setItem(this.KEY + '.cache', JSON.stringify({ ...data, syncedAt: Date.now() })); } catch (e) {}
     return data;
   }
@@ -1017,10 +1109,10 @@ class Component extends DCLogic {
 
   async loadAll(meId, authToken) {
     try {
-      const { users, entries, attendance, skips, buddy, insights } = await this.fetchCore(meId);
+      const { users, entries, attendance, skips, buddy, insights, goals } = await this.fetchCore(meId);
       const valid = meId && authToken && users.some(u => u.id === meId);
       this.setState({
-        ready: true, users, entries, attendance, skips, buddy, insights, offline: false,
+        ready: true, users, entries, attendance, skips, buddy, insights, goals, offline: false,
         meId: valid ? meId : null,
         authToken: valid ? authToken : null,
         view: valid ? 'app' : 'onboarding',
@@ -1048,9 +1140,10 @@ class Component extends DCLogic {
       const skips = (cached && cached.skips) || [];
       const buddy = (cached && cached.buddy) || { periodStart: null, periodEnd: null, daysLeft: null, config: null, pairs: [], monthCycles: [] };
       const insights = (cached && cached.insights) || { daily: null, monthly: null };
+      const goals = (cached && cached.goals) || [];
       const valid = meId && authToken && users.some(u => u.id === meId);
       this.setState({
-        ready: true, users, entries, attendance, skips, buddy, insights, offline: true,
+        ready: true, users, entries, attendance, skips, buddy, insights, goals, offline: true,
         meId: valid ? meId : null,
         authToken: valid ? authToken : null,
         view: valid ? 'app' : 'onboarding',
@@ -1058,6 +1151,17 @@ class Component extends DCLogic {
       });
       this.toast(cached ? 'Offline — showing last synced data' : 'Could not reach Pulse server');
     }
+  }
+
+  mapGoal(g) {
+    return {
+      id: g.id, userId: g.user, metric: g.metric, metricLabel: g.metric_label,
+      label: g.label || '', unit: g.unit || '', direction: g.direction,
+      baseline: g.baseline_value, target: g.target_value, periodMonth: g.period_month,
+      status: g.status, progress: g.progress || 0, current: g.current_value,
+      achieved: !!g.achieved,
+      readings: (g.readings || []).map(r => ({ id: r.id, date: r.date, value: r.value, note: r.note || '', photo: r.photo || null })),
+    };
   }
 
   // Re-pulls just attendance after a skip is set/cancelled — cheaper than a
@@ -1167,15 +1271,33 @@ class Component extends DCLogic {
     const goal = this.userGoal(id);
     const weeks = {};
     es.forEach(e => { const w = this.weekKey(this.parse(e.date)); weeks[w] = (weeks[w] || 0) + (e.minutes || 0); });
-    let goals = 0; Object.values(weeks).forEach(m => { if (m >= goal) goals += 50; });
+    let weeklyGoal = 0; Object.values(weeks).forEach(m => { if (m >= goal) weeklyGoal += 50; });
     const variety = new Set(es.map(e => e.type)).size * 10;
     const buddy = this.buddyPoints(id, mk);
+    const targets = this.targetPoints(id, mk);
     // The board never goes below zero: a run of buddy penalties shouldn't put
     // anyone in the red, and a negative score reads as a punishment rather
     // than "nothing logged yet".
-    return { activity, streak, goals, variety, buddy,
-      total: Math.max(0, activity + streak + goals + variety + buddy),
+    return { activity, streak, weeklyGoal, variety, buddy, targets,
+      total: Math.max(0, activity + streak + weeklyGoal + variety + buddy + targets),
       minutes: es.reduce((s, e) => s + (e.minutes || 0), 0), sessions: es.length };
+  }
+
+  // Additive-only personal-target points, current month only (past months'
+  // goals aren't loaded). Each active goal is worth up to +40 scaled by
+  // progress toward target, plus +10 once a mid-month (day-15-or-later) reading
+  // is logged. Zero when you have no goals — so nobody's existing score moves
+  // until they set one, and targets never subtract.
+  targetPoints(id, mk) {
+    if (mk !== this.monthKeyOf(new Date())) return 0;
+    const goals = (this.state.goals || []).filter(g =>
+      g.userId === id && g.status === 'active' && (g.periodMonth || '').slice(0, 7) === mk);
+    let pts = 0;
+    for (const g of goals.slice(0, 3)) {
+      pts += Math.round((g.progress || 0) * 40);
+      if ((g.readings || []).some(r => Number((r.date || '').slice(8, 10)) >= 15)) pts += 10;
+    }
+    return pts;
   }
 
   // The user's pair for the running cycle (null if unpaired / on the bench).
@@ -1545,6 +1667,58 @@ class Component extends DCLogic {
       .catch(() => this.toast('Could not clear that'));
   };
 
+  // ---- goals / targets ----
+  // Metric menu for the add-target sheet. Unit/direction are the app-side
+  // defaults; the backend fills the same when omitted.
+  GOAL_METRICS = [
+    { key: 'pushups', label: 'Push-ups', unit: 'reps' },
+    { key: 'plank', label: 'Plank', unit: 'sec' },
+    { key: 'surya_namaskar', label: 'Surya Namaskar', unit: 'rounds' },
+    { key: 'one_rm', label: '1-rep max', unit: 'kg' },
+    { key: 'weight', label: 'Weight', unit: 'kg' },
+    { key: 'bmi', label: 'BMI', unit: '' },
+    { key: 'custom', label: 'Custom', unit: '' },
+  ];
+  openGoalSheet = () => this.setState({ goalSheetOpen: true, goalMetric: 'pushups', goalBaseline: '', goalTarget: '' });
+  closeGoalSheet = () => this.setState({ goalSheetOpen: false });
+  setGoalMetric = (m) => this.setState({ goalMetric: m });
+  onGoalBaseline = (e) => this.setState({ goalBaseline: e.target.value });
+  onGoalTarget = (e) => this.setState({ goalTarget: e.target.value });
+  saveTarget = () => {
+    if (this.state.savingGoal) return;
+    if (this.meIsReadOnly()) { this.toast('Your account is read-only — ask an admin to reactivate it.'); return; }
+    const baseline = Number(this.state.goalBaseline), target = Number(this.state.goalTarget);
+    if (this.state.goalBaseline === '' || this.state.goalTarget === '' || isNaN(baseline) || isNaN(target)) { this.toast('Enter a baseline and target'); return; }
+    if (baseline === target) { this.toast('Target must differ from baseline'); return; }
+    this.setState({ savingGoal: true });
+    this.api('/goals/', { method: 'POST', body: JSON.stringify({ user: this.state.meId, metric: this.state.goalMetric, baseline_value: baseline, target_value: target }) })
+      .then(() => { this.setState({ savingGoal: false, goalSheetOpen: false }); this.toast('Target set 🎯'); this.refreshData(true); })
+      .catch((err) => { this.setState({ savingGoal: false }); this.toast((err && err.detail) || 'Could not set target'); });
+  };
+  openGoalReading = (goalId) => {
+    const g = (this.state.goals || []).find(x => x.id === goalId);
+    this.setState({ goalReadingFor: goalId, goalReadingValue: g ? String(g.current) : '', goalReadingNote: '' });
+  };
+  closeGoalReading = () => this.setState({ goalReadingFor: null });
+  onGoalReadingValue = (e) => this.setState({ goalReadingValue: e.target.value });
+  onGoalReadingNote = (e) => this.setState({ goalReadingNote: e.target.value });
+  saveGoalReading = () => {
+    if (this.state.savingReading) return;
+    if (this.meIsReadOnly()) { this.toast('Your account is read-only — ask an admin to reactivate it.'); return; }
+    const value = Number(this.state.goalReadingValue);
+    if (this.state.goalReadingValue === '' || isNaN(value)) { this.toast('Enter a value'); return; }
+    this.setState({ savingReading: true });
+    this.api('/goal-readings/', { method: 'POST', body: JSON.stringify({ goal: this.state.goalReadingFor, date: this.today, value, note: this.state.goalReadingNote || '' }) })
+      .then(() => { this.setState({ savingReading: false, goalReadingFor: null }); this.toast('Progress logged 📈'); this.refreshData(true); })
+      .catch((err) => { this.setState({ savingReading: false }); this.toast((err && err.detail) || 'Could not log progress'); });
+  };
+  deleteGoal = (goalId) => {
+    if (!goalId) return;
+    this.api('/goals/' + goalId + '/', { method: 'DELETE' })
+      .then(() => { this.setState({ goals: this.state.goals.filter(g => g.id !== goalId), goalReadingFor: null }); this.refreshData(true); this.toast('Target removed'); })
+      .catch((err) => this.toast((err && err.detail) || 'Could not remove target'));
+  };
+
   renderVals() {
     const S = this.state;
     if (!S.ready) return { notReady: true, showOnboarding: false, showApp: false, hasUsers: false, showJumpBackIn: false,
@@ -1553,6 +1727,8 @@ class Component extends DCLogic {
       existingUsers: [], nameInput: '', goalInput: 150, toast: null, navTabs: [], statCards: [], meBars: [],
       recent: [], typeChips: [], minChips: [], todayEntries: [], boardRest: [], calCells: [], calBlanks: [], groupedDays: [], pStats: [],
       todayStrip: [], showSkipSection: false, isSkippedToday: false, skipPromptOpen: false, skipReasonInput: '',
+      pGoalsView: [], pHasGoals: false, pCanAddGoal: false, pNoGoalsLabel: '', goalMetricChips: [],
+      goalSheetOpen: false, goalReadingOpen: false, goalUnitLabel: '', readingGoalName: '', readingGoalLine: '',
       showInstallBanner: false, showPushBanner: false,
       showBuddyCard: false, buddyIsBye: false, buddyPending: false, buddyStreakShow: false,
       boardBuddies: [], hasBuddies: false,
@@ -1679,7 +1855,7 @@ class Component extends DCLogic {
     const meUser = S.users.find(u => u.id === S.meId) || null;
     const meReadOnly = !!(meUser && meUser.status === 'disabled');
     const me = meUser ? uv(meUser) : { name: '', initials: '', color: '#C7F536' };
-    const meB = meUser ? this.scoreBreakdown(S.meId, nowMK) : { activity: 0, streak: 0, goals: 0, variety: 0, buddy: 0, total: 0, minutes: 0, sessions: 0 };
+    const meB = meUser ? this.scoreBreakdown(S.meId, nowMK) : { activity: 0, streak: 0, weeklyGoal: 0, variety: 0, buddy: 0, targets: 0, total: 0, minutes: 0, sessions: 0 };
     const meStreak = meUser ? this.currentStreak(S.meId) : 0;
     const meRow = rows.find(r => r.id === S.meId);
     const meRank = meRow ? meRow.rank : null;
@@ -1703,9 +1879,12 @@ class Component extends DCLogic {
       const arr = [
         { label: 'Activity (10/session + 1/min)', value: b.activity, color: '#C7F536' },
         { label: 'Streak (15 × days)', value: b.streak, color: '#FF6A3D' },
-        { label: 'Weekly goals (+50)', value: b.goals, color: '#FFD23F' },
+        { label: 'Weekly goal (+50)', value: b.weeklyGoal, color: '#FFD23F' },
         { label: 'Variety (10/type)', value: b.variety, color: '#4DD4FF' },
       ];
+      // Personal targets are additive and only appear once you've set one, so
+      // they never change a score that has none.
+      if (b.targets) arr.push({ label: 'Targets (≤40/goal)', value: b.targets, color: '#59E6A6' });
       // Buddy can be negative (penalties) — only show the bar when there's a
       // pairing in play, and colour it red when underwater.
       if (b.buddy) arr.push({ label: 'Buddy bonus', value: b.buddy, color: b.buddy < 0 ? '#FF5C5C' : '#B78BFF' });
@@ -1755,6 +1934,40 @@ class Component extends DCLogic {
       { label: 'Minutes', value: pB.minutes, accent: '#4DD4FF' },
       { label: 'Streak', value: pStreak, accent: '#FF6A3D' },
     ];
+
+    // Personal targets for the profile being viewed, this month. Read-only for
+    // others; editable (update/add) for me.
+    const pGoalsRaw = (S.goals || []).filter(g => g.userId === pid && (g.periodMonth || '').slice(0, 7) === mk);
+    const pGoalsView = pGoalsRaw.slice(0, 3).map(g => {
+      const pct = Math.round((g.progress || 0) * 100);
+      const unit = g.unit ? (' ' + g.unit) : '';
+      const hasCp = (g.readings || []).some(r => Number((r.date || '').slice(8, 10)) >= 15);
+      const pts = Math.round((g.progress || 0) * 40) + (hasCp ? 10 : 0);
+      return {
+        id: g.id, name: g.metricLabel || g.label || g.metric,
+        line: g.baseline + unit + ' → ' + g.target + unit,
+        current: 'now ' + g.current + unit, pct: pct + '%',
+        barColor: g.achieved ? '#C7F536' : '#59E6A6',
+        pointsLabel: '+' + pts + ' pts', onUpdate: () => this.openGoalReading(g.id),
+      };
+    });
+    const pHasGoals = pGoalsView.length > 0;
+    const pCanAddGoal = pIsMe && pGoalsRaw.length < 3;
+    const pNoGoalsLabel = pIsMe
+      ? 'No targets yet — set one and start earning bonus points.'
+      : 'No targets set this month.';
+    const goalMetricChips = this.GOAL_METRICS.map(m => ({
+      label: m.label, onClick: () => this.setGoalMetric(m.key),
+      style: 'padding:8px 14px;border-radius:999px;border:1px solid '
+        + (S.goalMetric === m.key ? '#59E6A6' : 'rgba(255,255,255,.12)') + ';background:'
+        + (S.goalMetric === m.key ? 'rgba(89,230,166,.12)' : 'transparent') + ';color:'
+        + (S.goalMetric === m.key ? '#59E6A6' : '#9DA391') + ';cursor:pointer;font-size:13px;font-weight:700;',
+    }));
+    const goalMetricMeta = this.GOAL_METRICS.find(m => m.key === S.goalMetric) || this.GOAL_METRICS[0];
+    const goalUnitLabel = goalMetricMeta.unit ? (' (' + goalMetricMeta.unit + ')') : '';
+    const readingGoal = (S.goals || []).find(g => g.id === S.goalReadingFor) || null;
+    const readingGoalName = readingGoal ? (readingGoal.metricLabel || readingGoal.label || readingGoal.metric) : '';
+    const readingGoalLine = readingGoal ? (readingGoal.baseline + ' → ' + readingGoal.target + (readingGoal.unit ? ' ' + readingGoal.unit : '')) : '';
 
     const cp = mk.split('-').map(Number); const cy = cp[0], cm = cp[1];
     const dim = new Date(cy, cm, 0).getDate();
@@ -1946,6 +2159,18 @@ class Component extends DCLogic {
       savingSkip: !!S.savingSkip, submitSkipLabel: S.savingSkip ? 'Filing…' : 'Lock in excuse',
       cancelSkipToday: () => this.cancelSkipToday(mySkip && mySkip.skipId),
       pView, pIsMe, pScore: pB.total, pStreak, pRankLabel: pRank ? '#' + pRank : '—', pGoal, pStats, pBars: barsOf(pB),
+      pGoalsView, pHasGoals, pCanAddGoal, pNoGoalsLabel, openGoalSheet: this.openGoalSheet,
+      goalSheetOpen: !!S.goalSheetOpen, closeGoalSheet: this.closeGoalSheet,
+      goalMetricChips, goalUnitLabel,
+      goalBaseline: S.goalBaseline, goalTarget: S.goalTarget,
+      onGoalBaseline: this.onGoalBaseline, onGoalTarget: this.onGoalTarget,
+      saveTarget: this.saveTarget, savingGoal: !!S.savingGoal,
+      goalReadingOpen: !!S.goalReadingFor, closeGoalReading: this.closeGoalReading,
+      readingGoalName, readingGoalLine,
+      goalReadingValue: S.goalReadingValue, goalReadingNote: S.goalReadingNote,
+      onGoalReadingValue: this.onGoalReadingValue, onGoalReadingNote: this.onGoalReadingNote,
+      saveGoalReading: this.saveGoalReading, savingReading: !!S.savingReading,
+      deleteReadingGoal: () => this.deleteGoal(S.goalReadingFor),
       calBlanks, calCells,
       groupedDays, hasHistory: groupedDays.length > 0, noHistory: groupedDays.length === 0,
     };
