@@ -12,7 +12,7 @@ A fitness leaderboard app — log workouts, build a streak, and compete on a mon
 - Monthly leaderboard ranked by activity, streaks, weekly goal hits, and exercise variety
 - Skip a day with an excuse instead of breaking your record silently
 - Workout buddies: everyone is paired up, you both earn a bonus on days you both log, and either of you can poke the other
-  - Pairings run for a fortnight and reshuffle every second Monday, with the dates shown in the app
+  - Pairings run for a week and reshuffle every Monday, with the dates shown in the app
   - Whoever's been most active is paired with whoever's been least, so momentum gets shared around
   - New athletes are paired the moment they sign up, taking the bench seat if nobody's waiting
 - Push reminders around your usual workout time, plus buddy bonus/penalty recaps
