@@ -1347,20 +1347,38 @@ class Component extends DCLogic {
       minutes: es.reduce((s, e) => s + (e.minutes || 0), 0), sessions: es.length };
   }
 
+  // Fraction toward target for one raw value — the same direction-agnostic
+  // formula as the backend's PulseGoal.progress, applied to a single reading
+  // rather than the goal's latest one. Used to tell "this reading is actual
+  // forward movement" from "this reading merely exists".
+  goalReadingProgress(g, value) {
+    if (g.target === g.baseline) return value === g.target ? 1 : 0;
+    return Math.max(0, Math.min(1, (value - g.baseline) / (g.target - g.baseline)));
+  }
+
+  // Points one active target contributes: up to +40 scaled by progress toward
+  // target, plus +10 once a mid-month (day-15-or-later) reading shows real
+  // movement from baseline. That second half used to fire off any reading
+  // logged on or after day 15, value irrelevant — so re-saving the same
+  // number with nothing changed, or a fresh reading with no note and no
+  // actual progress, still quietly added a point. Requiring the checkpoint
+  // reading's own progress to be above zero closes that.
+  goalPoints(g) {
+    const base = Math.round((g.progress || 0) * 40);
+    const hasRealCheckpoint = (g.readings || []).some(r =>
+      Number((r.date || '').slice(8, 10)) >= 15 && this.goalReadingProgress(g, r.value) > 0);
+    return base + (hasRealCheckpoint ? 10 : 0);
+  }
+
   // Additive-only personal-target points, current month only (past months'
-  // goals aren't loaded). Each active goal is worth up to +40 scaled by
-  // progress toward target, plus +10 once a mid-month (day-15-or-later) reading
-  // is logged. Zero when you have no goals — so nobody's existing score moves
-  // until they set one, and targets never subtract.
+  // goals aren't loaded). Zero when you have no goals — so nobody's existing
+  // score moves until they set one, and targets never subtract.
   targetPoints(id, mk) {
     if (mk !== this.monthKeyOf(new Date())) return 0;
     const goals = (this.state.goals || []).filter(g =>
       g.userId === id && g.status === 'active' && (g.periodMonth || '').slice(0, 7) === mk);
     let pts = 0;
-    for (const g of goals.slice(0, 3)) {
-      pts += Math.round((g.progress || 0) * 40);
-      if ((g.readings || []).some(r => Number((r.date || '').slice(8, 10)) >= 15)) pts += 10;
-    }
+    for (const g of goals.slice(0, 3)) pts += this.goalPoints(g);
     return pts;
   }
 
@@ -2031,8 +2049,7 @@ class Component extends DCLogic {
     const pGoalsView = pGoalsRaw.slice(0, 3).map(g => {
       const pct = Math.round((g.progress || 0) * 100);
       const unit = g.unit ? (' ' + g.unit) : '';
-      const hasCp = (g.readings || []).some(r => Number((r.date || '').slice(8, 10)) >= 15);
-      const pts = Math.round((g.progress || 0) * 40) + (hasCp ? 10 : 0);
+      const pts = this.goalPoints(g);
       return {
         id: g.id, name: g.metricLabel || g.label || g.metric,
         line: g.baseline + unit + ' → ' + g.target + unit,
