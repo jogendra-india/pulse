@@ -768,6 +768,12 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
             </sc-for>
           </div>
         </div>
+        <sc-if value="{{ isCustomGoal }}" hint-placeholder-val="{{ false }}">
+          <div>
+            <label style="display:block;color:#9DA391;font-size:11px;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px;">Title</label>
+            <input value="{{ goalLabel }}" onInput="{{ onGoalLabel }}" placeholder="what are you tracking?" style="width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:#0C0D0A;color:#F3F5EC;font-size:16px;outline:none;" />
+          </div>
+        </sc-if>
         <div style="display:flex;gap:12px;">
           <div style="flex:1;">
             <label style="display:block;color:#9DA391;font-size:11px;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px;">Baseline{{ goalUnitLabel }}</label>
@@ -789,7 +795,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
 
   <sc-if value="{{ goalReadingOpen }}" hint-placeholder-val="{{ false }}">
     <div style="position:fixed;inset:0;background:rgba(12,13,10,.8);backdrop-filter:blur(4px);z-index:67;display:flex;align-items:center;justify-content:center;padding:20px;">
-      <div style="background:#15170F;border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:22px;max-width:360px;width:100%;display:flex;flex-direction:column;gap:14px;animation:flbpop .2s ease;">
+      <div style="background:#15170F;border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:22px;max-width:360px;width:100%;display:flex;flex-direction:column;gap:14px;animation:flbpop .2s ease;max-height:90vh;overflow-y:auto;">
         <div style="font-family:Barlow Condensed;font-weight:800;font-size:22px;text-transform:uppercase;letter-spacing:.04em;">Update {{ readingGoalName }}</div>
         <div style="color:#9DA391;font-size:13px;margin-top:-6px;">{{ readingGoalLine }}</div>
         <div>
@@ -800,6 +806,25 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.55
           <label style="display:block;color:#9DA391;font-size:11px;text-transform:uppercase;letter-spacing:.12em;margin-bottom:6px;">Note (optional)</label>
           <input value="{{ goalReadingNote }}" onInput="{{ onGoalReadingNote }}" placeholder="how it felt…" style="width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:#0C0D0A;color:#F3F5EC;font-size:15px;outline:none;" />
         </div>
+        <!-- The note above was always saved — this is what was missing: nothing
+             ever showed it back, so "how it felt" on day 4 was unreadable by
+             day 15. Newest first, capped by the sheet's own scroll rather than
+             its own, so a long history doesn't push the buttons off-screen. -->
+        <sc-if value="{{ hasReadingHistory }}" hint-placeholder-val="{{ false }}">
+          <div>
+            <label style="display:block;color:#9DA391;font-size:11px;text-transform:uppercase;letter-spacing:.12em;margin-bottom:8px;">Past entries</label>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <sc-for list="{{ readingHistory }}" as="r" hint-placeholder-count="3">
+                <div style="padding:10px 12px;border-radius:10px;background:#0C0D0A;border:1px solid rgba(255,255,255,.06);">
+                  <div style="color:#F3F5EC;font-size:13px;font-weight:600;">{{ r.line }}</div>
+                  <sc-if value="{{ r.note }}" hint-placeholder-val="{{ false }}">
+                    <div style="color:#9DA391;font-size:12px;margin-top:3px;">{{ r.note }}</div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
         <div style="display:flex;gap:10px;">
           <button onClick="{{ closeGoalReading }}" style="flex:1;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:transparent;color:#F3F5EC;font-weight:700;cursor:pointer;" style-hover="border-color:#59E6A6;">Cancel</button>
           <button onClick="{{ saveGoalReading }}" disabled="{{ savingReading }}" style="flex:2;padding:12px;border-radius:10px;border:none;background:#59E6A6;color:#0C0D0A;font-family:Barlow Condensed;font-weight:800;font-size:16px;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;">Log progress</button>
@@ -864,7 +889,7 @@ class Component extends DCLogic {
     insights: { daily: null, monthly: null }, reviewSeen: null,
     goals: [],
     goalSheetOpen: false, goalReadingFor: null,
-    goalMetric: 'pushups', goalBaseline: '', goalTarget: '', savingGoal: false,
+    goalMetric: 'pushups', goalLabel: '', goalBaseline: '', goalTarget: '', savingGoal: false,
     goalReadingValue: '', goalReadingNote: '', savingReading: false,
   };
 
@@ -1715,9 +1740,14 @@ class Component extends DCLogic {
     { key: 'bmi', label: 'BMI', unit: '' },
     { key: 'custom', label: 'Custom', unit: '' },
   ];
-  openGoalSheet = () => this.setState({ goalSheetOpen: true, goalMetric: 'pushups', goalBaseline: '', goalTarget: '' });
+  openGoalSheet = () => this.setState({ goalSheetOpen: true, goalMetric: 'pushups', goalLabel: '', goalBaseline: '', goalTarget: '' });
   closeGoalSheet = () => this.setState({ goalSheetOpen: false });
+  // Custom keeps whatever title was already typed if you bounce between chips
+  // and back — only the other five ever forced it blank, since a lift name
+  // typed for Custom would otherwise be silently discarded picking Weight and
+  // coming back.
   setGoalMetric = (m) => this.setState({ goalMetric: m });
+  onGoalLabel = (e) => this.setState({ goalLabel: e.target.value });
   onGoalBaseline = (e) => this.setState({ goalBaseline: e.target.value });
   onGoalTarget = (e) => this.setState({ goalTarget: e.target.value });
   saveTarget = () => {
@@ -1726,8 +1756,14 @@ class Component extends DCLogic {
     const baseline = Number(this.state.goalBaseline), target = Number(this.state.goalTarget);
     if (this.state.goalBaseline === '' || this.state.goalTarget === '' || isNaN(baseline) || isNaN(target)) { this.toast('Enter a baseline and target'); return; }
     if (baseline === target) { this.toast('Target must differ from baseline'); return; }
+    const label = this.state.goalLabel.trim();
+    // The model already stores this for any metric ("or a specific lift"), but
+    // Custom is the one where skipping it leaves the goal with no name at all
+    // — every card and the update sheet fall back to the metric's own label,
+    // and "Custom" told two custom targets apart from nobody.
+    if (this.state.goalMetric === 'custom' && !label) { this.toast('Give your custom target a title'); return; }
     this.setState({ savingGoal: true });
-    this.api('/goals/', { method: 'POST', body: JSON.stringify({ user: this.state.meId, metric: this.state.goalMetric, baseline_value: baseline, target_value: target }) })
+    this.api('/goals/', { method: 'POST', body: JSON.stringify({ user: this.state.meId, metric: this.state.goalMetric, label, baseline_value: baseline, target_value: target }) })
       .then(() => { this.setState({ savingGoal: false, goalSheetOpen: false }); this.toast('Target set 🎯'); this.refreshData(true); })
       .catch((err) => { this.setState({ savingGoal: false }); this.toast((err && err.detail) || 'Could not set target'); });
   };
@@ -2019,9 +2055,21 @@ class Component extends DCLogic {
     }));
     const goalMetricMeta = this.GOAL_METRICS.find(m => m.key === S.goalMetric) || this.GOAL_METRICS[0];
     const goalUnitLabel = goalMetricMeta.unit ? (' (' + goalMetricMeta.unit + ')') : '';
+    const isCustomGoal = S.goalMetric === 'custom';
     const readingGoal = (S.goals || []).find(g => g.id === S.goalReadingFor) || null;
     const readingGoalName = readingGoal ? (readingGoal.metricLabel || readingGoal.label || readingGoal.metric) : '';
     const readingGoalLine = readingGoal ? (readingGoal.baseline + ' → ' + readingGoal.target + (readingGoal.unit ? ' ' + readingGoal.unit : '')) : '';
+    // A note typed while logging progress had nowhere to be read back — this
+    // is the trail, newest first, so "how did that plank feel three weeks in"
+    // has an answer instead of living only in the request that saved it.
+    const readingHistory = readingGoal
+      ? (readingGoal.readings || []).slice().sort((a, b) => b.date.localeCompare(a.date)).map(r => ({
+          id: r.id,
+          line: r.date + ' · ' + r.value + (readingGoal.unit ? ' ' + readingGoal.unit : ''),
+          note: r.note || '',
+        }))
+      : [];
+    const hasReadingHistory = readingHistory.length > 0;
 
     // ---- admin controls + read-only badges ----
     const meIsAdmin = !!(meUser && meUser.role === 'admin');
@@ -2228,7 +2276,8 @@ class Component extends DCLogic {
       pView, pIsMe, pScore: pB.total, pStreak, pRankLabel: pRank ? '#' + pRank : '—', pGoal, pStats, pBars: barsOf(pB),
       pGoalsView, pHasGoals, pCanAddGoal, pNoGoalsLabel, openGoalSheet: this.openGoalSheet,
       goalSheetOpen: !!S.goalSheetOpen, closeGoalSheet: this.closeGoalSheet,
-      goalMetricChips, goalUnitLabel,
+      goalMetricChips, goalUnitLabel, isCustomGoal,
+      goalLabel: S.goalLabel, onGoalLabel: this.onGoalLabel,
       goalBaseline: S.goalBaseline, goalTarget: S.goalTarget,
       onGoalBaseline: this.onGoalBaseline, onGoalTarget: this.onGoalTarget,
       saveTarget: this.saveTarget, savingGoal: !!S.savingGoal,
@@ -2237,6 +2286,7 @@ class Component extends DCLogic {
       goalReadingValue: S.goalReadingValue, goalReadingNote: S.goalReadingNote,
       onGoalReadingValue: this.onGoalReadingValue, onGoalReadingNote: this.onGoalReadingNote,
       saveGoalReading: this.saveGoalReading, savingReading: !!S.savingReading,
+      readingHistory, hasReadingHistory,
       deleteReadingGoal: () => this.deleteGoal(S.goalReadingFor),
       pReadOnly, meIsAdmin, pAdminCanAct, pAdminActionLabel, pAdminAction, pAdminActionStyle,
       adminDisabledList, adminHasDisabled,
