@@ -1,8 +1,15 @@
 // App-shell cache: stale-while-revalidate. Every load is served from cache
 // instantly, while a background fetch refreshes that cache for next time —
-// so a new deploy shows up on the following visit automatically, with no
-// manual cache-version bump required.
-const CACHE = 'pulse-shell';
+// so a new deploy shows up on the following visit automatically. The version
+// suffix is only needed when a change must not wait for that second visit,
+// as with the notification fix this bump ships.
+const CACHE = 'pulse-shell-v2';
+// Every cache this app may delete on activate. CacheStorage is partitioned by
+// origin and not by service worker scope, so `caches.keys()` also lists the
+// caches of the other PWA on jogendra-india.github.io (Reef, at /reef/).
+// Purging by prefix keeps a version bump here from touching anything of Reef's
+// — the mistake Reef's own worker was making in the other direction.
+const CACHE_PREFIX = 'pulse-';
 
 const SHELL_ABS = ['./', './index.html', './support.js', './manifest.json', './icon-192.png', './icon-512.png', './icon-maskable-512.png']
   .map((p) => new URL(p, self.location).href)
@@ -18,8 +25,36 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    caches
+      .keys()
+      .then((names) =>
+        Promise.all(
+          names
+            .filter((n) => n.startsWith(CACHE_PREFIX) && n !== CACHE)
+            .map((n) => caches.delete(n))
+        )
+      )
+      .then(() => self.clients.claim())
+  );
 });
+
+/* Windows belonging to *this* app.
+ *
+ * `includeUncontrolled: true` is origin-scoped rather than scope-scoped — it
+ * returns every client on jogendra-india.github.io, and a second unrelated PWA
+ * lives at /reef/. Without the filter, tapping a Pulse notification could
+ * focus a Reef window instead of the leaderboard. The flag has to stay so a
+ * window this worker has not taken control of yet is still visible; the scope
+ * check is what makes the answer specific to Pulse.
+ */
+async function ownWindows() {
+  const all = await self.clients.matchAll({
+    type: 'window',
+    includeUncontrolled: true,
+  });
+  return all.filter((client) => client.url.startsWith(self.registration.scope));
+}
 
 // Web Push: the backend's nudge task sends a JSON payload ({title, body,
 // url, icon}); show it as a notification even when no tab is open.
@@ -43,7 +78,7 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const target = (event.notification.data && event.notification.data.url) || './';
   event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+    ownWindows().then((list) => {
       for (const client of list) {
         if ('focus' in client) return client.focus();
       }
