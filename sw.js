@@ -3,7 +3,7 @@
 // so a new deploy shows up on the following visit automatically. The version
 // suffix is only needed when a change must not wait for that second visit,
 // as with the notification fix this bump ships.
-const CACHE = 'pulse-shell-v2';
+const CACHE = 'pulse-shell-v3';
 // Every cache this app may delete on activate. CacheStorage is partitioned by
 // origin and not by service worker scope, so `caches.keys()` also lists the
 // caches of the other PWA on jogendra-india.github.io (Reef, at /reef/).
@@ -69,6 +69,14 @@ self.addEventListener('push', (event) => {
     vibrate: [80, 40, 80],
     data: { url: data.url || './' },
   };
+  // Only when the sender asks for one. Nudges deliberately carry no tag, so
+  // two of them stack rather than one silently replacing the other; the
+  // proving push sets its own so it can never be the thing that replaces a
+  // real nudge, or get replaced by one landing at the same moment.
+  if (data.tag) {
+    options.tag = data.tag;
+    options.renotify = true;
+  }
   event.waitUntil(self.registration.showNotification(title, options));
 });
 

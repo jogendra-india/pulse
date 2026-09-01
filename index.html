@@ -997,7 +997,23 @@ class Component extends DCLogic {
         body: JSON.stringify({ user: this.state.meId, endpoint: json.endpoint, keys: json.keys }),
       });
       this.setState({ pushEnabled: true, enablingPush: false });
-      this.toast("🔔 You're in — we'll nudge you around your usual time");
+      // Proof rather than a promise. "We'll nudge you" was the app describing
+      // a state it had just set, which is worth little when the doubt is
+      // whether anything arrives at all — that runs through a service worker,
+      // a push service and an OS that each get a say. So the server sends a
+      // real one back, and the copy asks for the app to be closed, because
+      // delivery to a closed app is the part that actually breaks.
+      try {
+        await this.api('/push/test/', {
+          method: 'POST',
+          body: JSON.stringify({ endpoint: json.endpoint }),
+        });
+        this.toast('🔔 Test sent — close Pulse, arrives in ~30s');
+      } catch (e) {
+        // Subscribed fine, but the test could not be queued. Reminders are on,
+        // so say that and promise nothing further.
+        this.toast("🔔 You're in — we'll nudge you around your usual time");
+      }
     } catch (e) {
       this.setState({ enablingPush: false });
       this.toast('Could not enable reminders');
